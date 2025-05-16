@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+venv/
+*.log
+.vscode/ # Thường không cần commit cài đặt VSCode riêng của mỗi người
+# Các file tạm, backup khác
+config/service_account.json
+service_account.json
