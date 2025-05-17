@@ -71,9 +71,6 @@ def load_app_config():
     config['MAX_KEYWORDS_PER_RUN'] = int(os.getenv('MAX_KEYWORDS_PER_RUN', str(config.get('MAX_KEYWORDS_PER_RUN', 1))))
     config['DELAY_BETWEEN_KEYWORDS_SEC'] = int(os.getenv('DELAY_BETWEEN_KEYWORDS_SEC', str(config.get('DELAY_BETWEEN_KEYWORDS_SEC', 5))))
     # config['GSHEET_KEYWORD_SHEET_NAME_USED_0'] = os.getenv('GSHEET_KEYWORD_SHEET_NAME_USED_0', 'Keyword Used = 0')
-    config['IMAGE_SEARCH_MIN_WIDTH'] = int(os.getenv('IMAGE_SEARCH_MIN_WIDTH', str(config.get('IMAGE_SEARCH_MIN_WIDTH', 1000))))
-    config['IMAGE_SEARCH_MIN_HEIGHT'] = int(os.getenv('IMAGE_SEARCH_MIN_HEIGHT', str(config.get('IMAGE_SEARCH_MIN_HEIGHT', 600))))
-
     config['GSHEET_STATUS_COLUMN'] = os.getenv('GSHEET_STATUS_COLUMN', config.get('GSHEET_STATUS_COLUMN'))
 
     config['ENABLE_FEATURED_IMAGE_GENERATION'] = os.getenv('ENABLE_FEATURED_IMAGE_GENERATION', str(config.get('ENABLE_FEATURED_IMAGE_GENERATION', True))).lower() in ['true', '1', 't']

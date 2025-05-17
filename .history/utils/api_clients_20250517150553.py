@@ -3,7 +3,6 @@ import requests
 import time
 import json
 import logging
-import re # Thêm thư viện regex để trích xuất YouTube ID
 from openai import OpenAI # Thư viện OpenAI chính thức
 from googleapiclient.discovery import build # Thư viện Google API
 # Giả sử APP_CONFIG được load từ một module config_loader
@@ -284,8 +283,8 @@ def call_serper_search(query, api_key, serper_base_url, num_results=10, search_t
     serper_endpoint_map = {
         'web': '/search',
         'image': '/images',
-        'video': '/videos', # Thêm endpoint cho video
-        # 'news': '/news'   # Có thể thêm nếu Serper hỗ trợ và bạn cần
+        # 'video': '/videos', # Thêm nếu cần
+        # 'news': '/news'     # Thêm nếu cần
     }
     endpoint = serper_endpoint_map.get(search_type)
     if not endpoint:
@@ -355,26 +354,6 @@ def call_serper_search(query, api_key, serper_base_url, num_results=10, search_t
                             'source': 'serper'
                         })
                 logger.info(f"Serper Image Search: {len(standardized_results)} items passed size filter (min_w: {min_width_filter}, min_h: {min_height_filter}).")
-            elif search_type == 'video':
-                raw_items = results_json.get('videos', [])
-                logger.info(f"Serper Video Search successful. Found {len(raw_items)} raw items.")
-                for item in raw_items:
-                    video_id = None
-                    link = item.get('link')
-                    if link:
-                        # Trích xuất YouTube video ID từ link nếu có
-                        yt_match = re.search(r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})', link)
-                        if yt_match:
-                            video_id = yt_match.group(1)
-                    
-                    standardized_results.append({
-                        'videoID': video_id, # Sẽ là None nếu không phải link YouTube hoặc không trích xuất được
-                        'videoTitle': item.get('title'),
-                        'videoDescription': item.get('snippet'), # Serper dùng snippet cho description video
-                        'sourceLink': link, # Giữ lại link gốc từ Serper
-                        'source': 'serper'
-                    })
-                logger.info(f"Serper Image Search: {len(standardized_results)} items passed size filter (min_w: {min_width_filter}, min_h: {min_height_filter}).")
             return standardized_results # Trả về ngay khi thành công
 
         except requests.exceptions.HTTPError as e:
@@ -395,7 +374,7 @@ def call_serper_search(query, api_key, serper_base_url, num_results=10, search_t
 # --- Unified Search Function ---
 def perform_search(query, search_type, config, num_results=10, **kwargs):
     """
-    Hàm điều phối tìm kiếm, gọi Google hoặc Serper dựa trên cấu hình. Chuẩn hóa kết quả trả về.
+    Hàm điều phối tìm kiếm, gọi Google hoặc Serper dựa trên cấu hình.
     search_type: 'web' hoặc 'image'.
     config: Đối tượng config chứa SEARCH_PROVIDER và các API keys.
     **kwargs: Các tham số bổ sung như gl, hl, imgSize.
@@ -416,7 +395,7 @@ def perform_search(query, search_type, config, num_results=10, **kwargs):
             serper_kwargs['min_width'] = config.get('IMAGE_SEARCH_MIN_WIDTH')
             serper_kwargs['min_height'] = config.get('IMAGE_SEARCH_MIN_HEIGHT')
             logger.info(f"Serper image search will use min_width: {serper_kwargs['min_width']}, min_height: {serper_kwargs['min_height']}")
-        # Đối với video, không có tham số đặc biệt nào từ config được truyền vào call_serper_search ở đây
+        
         return call_serper_search(query, serper_api_key, serper_base_url,
                                   num_results=num_results, search_type=search_type, **serper_kwargs)
 
@@ -426,29 +405,11 @@ def perform_search(query, search_type, config, num_results=10, **kwargs):
         if not google_api_key or not google_cx_id:
             logger.error("Google API key or CX_ID missing. Cannot perform search via Google.")
             return []
-
-        if search_type == 'video':
-            # Gọi youtube_search và chuẩn hóa kết quả
-            youtube_api_key_for_video = config.get('YOUTUBE_API_KEY', google_api_key) # Ưu tiên YOUTUBE_API_KEY
-            if not youtube_api_key_for_video:
-                logger.error("YouTube API key (or Google API key as fallback) missing for video search.")
-                return []
-            
-            raw_yt_results = youtube_search(query, youtube_api_key_for_video, num_results=num_results, **kwargs)
-            standardized_yt_results = []
-            for item in raw_yt_results:
-                if item.get('id', {}).get('kind') == 'youtube#video':
-                    standardized_yt_results.append({
-                        'videoID': item.get('id', {}).get('videoId'),
-                        'videoTitle': item.get('snippet', {}).get('title'),
-                        'videoDescription': item.get('snippet', {}).get('description'),
-                        'sourceLink': f"https://www.youtube.com/watch?v={item.get('id', {}).get('videoId')}",
-                        'source': 'google_youtube' # Phân biệt rõ nguồn
-                    })
-            return standardized_yt_results
-        else: # web hoặc image
-            return google_search(query, google_api_key, google_cx_id, 
-                                 search_type=search_type, num_results=num_results, **kwargs)
+        
+        # Với Google, tham số imgSize (nếu có trong kwargs) sẽ được google_search xử lý
+        # và Google tự lọc phía server.
+        return google_search(query, google_api_key, google_cx_id, 
+                             search_type=search_type, num_results=num_results, **kwargs)
     else:
         logger.error(f"Unsupported search provider: {provider}. Please use 'google' or 'serper'.")
         return []

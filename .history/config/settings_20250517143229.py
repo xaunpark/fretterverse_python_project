@@ -35,9 +35,7 @@ GOOGLE_CX_ID = "YOUR_SINGLE_CX_ID_FROM_ENV" # Sẽ được load từ .env
 GOOGLE_SEARCH_NUM_RESULTS = 10 # Số kết quả lấy từ Google Search cho phân tích intent
 SERPER_API_KEY = None # Sẽ được override bởi .env
 SERPER_BASE_URL = "https://google.serper.dev"
-SEARCH_PROVIDER = "serper" # Giá trị có thể là "google" hoặc "serper"
-IMAGE_SEARCH_MIN_WIDTH = 800 # Kích thước chiều rộng tối thiểu cho ảnh từ Serper
-IMAGE_SEARCH_MIN_HEIGHT = 600 # Kích thước chiều cao tối thiểu cho ảnh từ Serper
+SEARCH_PROVIDER = "google" # Giá trị có thể là "google" hoặc "serper"
 YOUTUBE_SEARCH_NUM_RESULTS = 5
 
 # --- Cấu hình logic nghiệp vụ ---
