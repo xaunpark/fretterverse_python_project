@@ -3,6 +3,7 @@ import logging
 import random
 import json # Để parse JSON từ OpenAI nếu cần (mặc dù prompt yêu cầu JSON object)
 from utils.api_clients import call_openai_chat, perform_search # Sử dụng perform_search
+# from utils.redis_handler import RedisHandler # Sẽ được thay thế bởi RunContext
 from prompts import video_prompts
 # from utils.config_loader import APP_CONFIG # Import config của bạn
 

@@ -18,6 +18,7 @@ from utils.api_clients import (
     call_openai_embeddings
 )
 from utils.google_sheets_handler import GoogleSheetsHandler
+# from utils.redis_handler import RedisHandler # Sẽ loại bỏ dần
 from utils.pinecone_handler import PineconeHandler
 from utils.image_utils import resize_image
 from utils.db_handler import MySQLHandler

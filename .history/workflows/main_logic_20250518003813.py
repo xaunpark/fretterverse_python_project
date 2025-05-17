@@ -18,6 +18,7 @@ from utils.api_clients import (
     call_openai_embeddings
 )
 from utils.google_sheets_handler import GoogleSheetsHandler
+# from utils.redis_handler import RedisHandler # Sẽ loại bỏ dần
 from utils.pinecone_handler import PineconeHandler
 from utils.image_utils import resize_image
 from utils.db_handler import MySQLHandler
@@ -942,7 +943,32 @@ def write_content_for_all_sections_step(processed_sections_list, article_meta, p
 ### --- Bước 4: Xử lý Sub-Workflows và Tổng hợp ###
 ###################################################
 
-def process_sub_workflows_step(sections_with_initial_content, article_meta, run_context: RunContext, config):
+def _initialize_redis_keys_for_subworkflows(redis_handler, config, unique_run_id):
+    """Khởi tạo/reset các key Redis cần thiết cho các sub-workflows."""
+    if not redis_handler or not redis_handler.is_connected():
+        logger.error("Redis not connected. Cannot initialize keys for sub-workflows.")
+        return False
+
+    # Image processor keys
+    img_keys = image_processor._get_redis_keys(config, unique_run_id) # Giả sử hàm này có trong image_processor
+    redis_handler.initialize_array_if_not_exists(img_keys['image_array'], "[]")
+    redis_handler.initialize_array_if_not_exists(img_keys['failed_urls'], "[]")
+    redis_handler.initialize_array_if_not_exists(img_keys['used_urls'], "[]")
+    # Không cần xóa current_image_search_results_prefix ở đây, hàm con sẽ tự quản lý
+
+    # Video processor key
+    vid_key = video_processor._get_redis_video_array_key(config, unique_run_id) # Giả sử hàm này có
+    redis_handler.initialize_array_if_not_exists(vid_key, "[]")
+
+    # External links processor key
+    ext_key = external_links_processor._get_redis_exlinks_array_key(config, unique_run_id) # Giả sử
+    redis_handler.initialize_array_if_not_exists(ext_key, "[]")
+    
+    logger.info(f"Initialized Redis keys for sub-workflows with run_id: {unique_run_id}")
+    return True
+
+
+def process_sub_workflows_step(sections_with_initial_content, article_meta, config, unique_run_id):
     """
     Gọi các sub-workflow để xử lý images, videos, external links.
     sections_with_initial_content: List các section với html_content từ Bước 3.
@@ -960,7 +986,12 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, run_
         return None
 
     article_title = article_meta.get("title", "Untitled Article")
-    logger.info(f"--- Starting Step 4: Sub-Workflow Processing for article '{article_title}', run_id: {run_context.unique_run_id} ---")
+    logger.info(f"--- Starting Step 4: Sub-Workflow Processing for article '{article_title}', run_id: {unique_run_id} ---")
+
+    # redis_h = RedisHandler(config=config) # Sẽ không dùng RedisHandler nữa
+    # if not _initialize_redis_keys_for_subworkflows(redis_h, config, unique_run_id):
+    #     logger.error("Failed to initialize Redis keys. Aborting sub-workflow processing.")
+    #     return None
 
     # 1. Xử lý External Links trước (vì nó thay đổi html_content)
     # sections_with_initial_content là list các dict, mỗi dict có key 'current_html_content'
@@ -975,23 +1006,22 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, run_
 
     logger.info("Starting external links processing...")
     sections_after_external_links = external_links_processor.process_external_links_for_article(
-        sections_with_content_list=sections_for_ext_links,
+        sections_with_content_list=sections_for_ext_links, # Truyền list section có html_content
         article_title_main=article_title,
-        run_context=run_context, # Thêm run_context
-        config=config
+        config=config,
+        unique_run_id=unique_run_id
     )
-
     if not sections_after_external_links:
         logger.error("External links processing failed. Proceeding without external links.")
         # Quyết định: Dừng lại hay tiếp tục? Tạm thời tiếp tục và dùng content cũ.
         sections_after_external_links = sections_with_initial_content
     else:
-        sections_final_content_structure = [dict(s) for s in sections_with_initial_content] # Tạo bản sao
+        # Cập nhật lại key 'html_content' trong list gốc để các bước sau dùng
         temp_dict_after_ext_links = {s['sectionIndex']: s['current_html_content'] for s in sections_after_external_links}
-        for i, sec in enumerate(sections_final_content_structure):
-            sections_final_content_structure[i]['html_content'] = temp_dict_after_ext_links.get(
+        for i, sec in enumerate(sections_with_initial_content):
+            sections_with_initial_content[i]['html_content'] = temp_dict_after_ext_links.get(
                 sec['sectionIndex'], 
-                sec.get('html_content', '') # Fallback nếu sectionIndex không tìm thấy
+                sec['html_content'] # Fallback nếu sectionIndex không tìm thấy (không nên xảy ra)
             )
         logger.info("External links processing completed.")
 
@@ -1004,12 +1034,11 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, run_
     # hoặc main_logic có thể đọc trực tiếp từ Redis sau khi hàm này chạy xong.
     # Để đơn giản, giả sử nó trả về list kết quả.
     final_image_data_list = image_processor.process_images_for_article(
-        sections_data_list=sections_with_initial_content, 
+        sections_data_list=sections_with_initial_content, # Truyền list section đã có index, type, name, etc.
         article_title=article_title,
-        run_context=run_context, # Thêm run_context
-        config=config
+        config=config,
+        unique_run_id=unique_run_id
     )
-
     if not final_image_data_list:
         logger.warning("Image processing did not return data. Assuming no images or errors occurred.")
         final_image_data_list = [] # Đảm bảo là list
@@ -1021,23 +1050,22 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, run_
     final_video_data_list = video_processor.process_videos_for_article(
         sections_data_list=sections_with_initial_content,
         article_title=article_title,
-        run_context=run_context, # Thêm run_context
-        config=config
+        config=config,
+        unique_run_id=unique_run_id
     )
-
     if not final_video_data_list:
         logger.warning("Video processing did not return data. Assuming no videos or errors occurred.")
         final_video_data_list = [] # Đảm bảo là list
     logger.info("Video processing completed.")
 
-    logger.info(f"--- Step 4 (Sub-Workflow Processing) completed for run_id: {run_context.unique_run_id} ---")
+    logger.info(f"--- Step 4 (Sub-Workflow Processing) completed for run_id: {unique_run_id} ---")
     
     return {
-        "sections_final_content_structure": sections_final_content_structure, # Sửa ở đây
+        # Trả về list section với html_content đã được cập nhật bởi external_links_processor
+        "sections_final_content_structure": sections_with_initial_content,
         "final_image_data_list": final_image_data_list,
         "final_video_data_list": final_video_data_list
     }
-
 
 ######################################################
 #### --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh --- ####
@@ -1199,24 +1227,19 @@ def _generate_section_id_from_name(section_name):
     return s if s else "section" # Fallback nếu tên rỗng sau khi chuẩn hóa
 
 
-def assemble_full_html_step(sections_final_content_structure, 
-                            final_image_data_list, 
-                            final_video_data_list, 
-                            article_meta, 
-                            processed_sections_list_from_step2, 
-                            config):
-
+def assemble_full_html_step(sub_workflow_results, article_meta, processed_sections_list_from_step2, config):
     """
     Ghép nối tất cả nội dung, ảnh, video, bảng so sánh thành một chuỗi HTML hoàn chỉnh.
     sub_workflow_results: Kết quả từ Bước 4.
     processed_sections_list_from_step2: Dùng để lấy productList cho bảng so sánh.
     """
-    if not sections_final_content_structure:
+    if not sub_workflow_results or not sub_workflow_results.get("sections_final_content_structure"):
         logger.error("Missing processed sections from sub-workflows. Cannot assemble HTML.")
         return None
 
-    image_data_map = {item['index']: item for item in (final_image_data_list or []) if item.get('url') and 'error' not in item.get('url') and 'skip' not in item.get('url')}
-    video_data_map = {item['index']: item for item in (final_video_data_list or []) if item.get('videoID') and item.get('videoID') != 'none'}
+    sections_to_assemble = sub_workflow_results.get("sections_final_content_structure")
+    image_data_map = {item['index']: item for item in sub_workflow_results.get("final_image_data_list", []) if item.get('url') and 'error' not in item.get('url') and 'skip' not in item.get('url')}
+    video_data_map = {item['index']: item for item in sub_workflow_results.get("final_video_data_list", []) if item.get('videoID') and item.get('videoID') != 'none'}
 
     # 1. Tạo bảng so sánh nếu cần
     comparison_table_html_content = _generate_comparison_table_if_needed(
@@ -1228,7 +1251,7 @@ def assemble_full_html_step(sections_final_content_structure,
     full_html_parts = []
     is_comparison_table_inserted = False
 
-    for section_data in sections_final_content_structure:
+    for section_data in sections_to_assemble:
         s_name = section_data.get("sectionName", "Unnamed Section")
         s_type = section_data.get("sectionType")
         s_index = section_data.get("sectionIndex")
@@ -1736,12 +1759,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 4: Xử lý Sub-Workflows (Images, Videos, External Links) ---
     logger.info("--- Running Step 4: Process Sub-Workflows ---")
     sub_workflow_outputs = process_sub_workflows_step(
-        sections_with_initial_content=sections_with_content, 
+        sections_with_initial_content=sections_with_content,
         article_meta=outline_results.get("article_meta"),
-        run_context=run_context, # Truyền run_context
-        config=config
+        config=config,
+        unique_run_id=current_run_id # Truyền unique_run_id
     )
-
     if not sub_workflow_outputs:
         logger.error(f"Step 4 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 4, "reason": "Sub-workflow processing failed", "keyword": keyword_to_process}
@@ -1749,14 +1771,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh ---
     logger.info("--- Running Step 5: Assemble Full HTML ---")
     full_html = assemble_full_html_step(
-        sections_final_content_structure=sub_workflow_outputs.get("sections_final_content_structure"),
-        final_image_data_list=sub_workflow_outputs.get("final_image_data_list"),
-        final_video_data_list=sub_workflow_outputs.get("final_video_data_list"),
+        sub_workflow_results=sub_workflow_outputs,
         article_meta=outline_results.get("article_meta"),
         processed_sections_list_from_step2=outline_results.get("processed_sections_list"),
         config=config
     )
-
     if not full_html:
         logger.error(f"Step 5 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 5, "reason": "HTML assembly failed", "keyword": keyword_to_process}

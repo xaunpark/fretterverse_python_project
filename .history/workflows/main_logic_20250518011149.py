@@ -18,6 +18,7 @@ from utils.api_clients import (
     call_openai_embeddings
 )
 from utils.google_sheets_handler import GoogleSheetsHandler
+# from utils.redis_handler import RedisHandler # Sẽ loại bỏ dần
 from utils.pinecone_handler import PineconeHandler
 from utils.image_utils import resize_image
 from utils.db_handler import MySQLHandler
@@ -1736,12 +1737,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 4: Xử lý Sub-Workflows (Images, Videos, External Links) ---
     logger.info("--- Running Step 4: Process Sub-Workflows ---")
     sub_workflow_outputs = process_sub_workflows_step(
-        sections_with_initial_content=sections_with_content, 
+        sections_with_initial_content=sections_with_content,
         article_meta=outline_results.get("article_meta"),
-        run_context=run_context, # Truyền run_context
-        config=config
+        config=config,
+        unique_run_id=current_run_id # Truyền unique_run_id
     )
-
     if not sub_workflow_outputs:
         logger.error(f"Step 4 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 4, "reason": "Sub-workflow processing failed", "keyword": keyword_to_process}
@@ -1749,14 +1749,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh ---
     logger.info("--- Running Step 5: Assemble Full HTML ---")
     full_html = assemble_full_html_step(
-        sections_final_content_structure=sub_workflow_outputs.get("sections_final_content_structure"),
-        final_image_data_list=sub_workflow_outputs.get("final_image_data_list"),
-        final_video_data_list=sub_workflow_outputs.get("final_video_data_list"),
+        sub_workflow_results=sub_workflow_outputs,
         article_meta=outline_results.get("article_meta"),
         processed_sections_list_from_step2=outline_results.get("processed_sections_list"),
         config=config
     )
-
     if not full_html:
         logger.error(f"Step 5 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 5, "reason": "HTML assembly failed", "keyword": keyword_to_process}

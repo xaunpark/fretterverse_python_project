@@ -8,6 +8,7 @@ from utils.api_clients import ( # Đã import perform_search ở file trước
     perform_search, # Sử dụng perform_search thay vì google_search trực tiếp
     upload_wp_media
 )
+# from utils.redis_handler import RedisHandler # Sẽ được thay thế bởi RunContext
 from utils.image_utils import resize_image
 from prompts import image_prompts
 # from utils.config_loader import APP_CONFIG # Import config của bạn

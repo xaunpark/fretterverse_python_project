@@ -5,10 +5,14 @@ import re
 import html 
 import urllib.parse 
 from bs4 import BeautifulSoup
-from utils.api_clients import call_openai_chat, perform_search
+from utils.api_clients import call_openai_chat, perform_search 
+# from utils.redis_handler import RedisHandler # Sẽ được thay thế bởi RunContext
 from prompts import external_link_prompts
 
 logger = logging.getLogger(__name__)
+
+def _get_redis_exlinks_array_key(config, unique_run_id):
+    return f"{config.get('REDIS_KEY_EXLINKS_ARRAY_PREFIX', 'fvp_exlinks_array_')}{unique_run_id}"
 
 def _should_skip_external_links(section_data):
     section_name = section_data.get('sectionName', '').lower()
@@ -60,9 +64,8 @@ def _extract_first_valid_url_from_string(text_containing_url):
 
 def process_external_links_for_section(
     section_data, article_title_main, 
-    run_context, # Thay redis_handler bằng run_context
-    config, openai_api_key, google_api_key, 
-    unique_run_id # Vẫn giữ unique_run_id nếu cần cho logging hoặc mục đích khác
+    redis_handler, config, openai_api_key, google_api_key, 
+    unique_run_id
 ):
     min_links = config.get('EXTERNAL_LINKS_PER_SECTION_MIN', 1) # Giảm min xuống 1 để dễ thấy kết quả
     max_links = config.get('EXTERNAL_LINKS_PER_SECTION_MAX', 2) # Giảm max xuống 2 để test nhanh hơn
@@ -116,7 +119,10 @@ def process_external_links_for_section(
     if not anchor_texts_info: # Nếu vẫn rỗng sau khi thử các key
         logger.info(f"ExtLinks: No anchor texts could be extracted for '{section_data.get('sectionName')}'.")
         return original_html_content # Dừng xử lý section này nếu không có anchor
+    
     logger.debug(f"ExtLinks: Anchors for '{section_data.get('sectionName')}': {anchor_texts_info}")
+
+    redis_exlinks_key = _get_redis_exlinks_array_key(config, unique_run_id)
     
     links_inserted_count = 0
     processed_anchors_in_section = set()
@@ -182,12 +188,12 @@ def process_external_links_for_section(
         if not final_url_to_insert: continue
         logger.info(f"ExtLinks: AI selected URL '{final_url_to_insert}' for '{anchor_text_original}'.")
 
-        # Đọc từ run_context.used_external_links (là một set)
-        # current_exlinks_array = run_context.used_external_links # Đây là set
+        current_exlinks_array = redis_handler.get_value(redis_exlinks_key) or []
+        if not isinstance(current_exlinks_array, list): current_exlinks_array = []
         
         normalized_url_to_check = final_url_to_insert.lower().replace("www.", "").rstrip('/')
         is_duplicate = any(url_entry.lower().replace("www.", "").rstrip('/') == normalized_url_to_check 
-                           for url_entry in run_context.used_external_links)
+                           for url_entry in current_exlinks_array)
         if is_duplicate: 
             logger.info(f"ExtLinks: URL '{final_url_to_insert}' is duplicate. Skipping.")
             continue
@@ -254,8 +260,8 @@ def process_external_links_for_section(
             logger.info(f"ExtLinks: Inserted link for anchor '{anchor_text_original}' in section '{section_data.get('sectionName')}'.")
             links_inserted_count += 1
             processed_anchors_in_section.add(anchor_text_original.lower())
-            # Thêm vào set trong run_context
-            run_context.used_external_links.add(final_url_to_insert)
+            current_exlinks_array.append(final_url_to_insert)
+            redis_handler.set_value(redis_exlinks_key, list(set(current_exlinks_array)))
         else:
             logger.warning(f"ExtLinks: Could not replace anchor '{anchor_text_original}' in HTML (maybe already linked or complex structure) of section '{section_data.get('sectionName')}'.")
 
@@ -274,18 +280,26 @@ def process_external_links_for_article(sections_with_content_list, article_title
         logger.error("Missing critical API keys or Google CX ID for external links in config.")
         return sections_with_content_list 
 
+    # redis_handler = RedisHandler(config=config) # Sẽ thay thế bằng run_context
+    # if not redis_handler.is_connected():
+    #     logger.error("Cannot connect to Redis. Aborting external links processing.")
+    #     return sections_with_content_list
+
+    # redis_exlinks_key = _get_redis_exlinks_array_key(config, run_context.unique_run_id) # Sẽ dùng run_context trực tiếp
     # run_context.used_external_links đã được khởi tạo là set rỗng
+
     updated_sections_list = []
     for section_data in sections_with_content_list:
         current_section_copy = dict(section_data) 
         updated_content = process_external_links_for_section(
             section_data=current_section_copy,
             article_title_main=article_title_main,
-            run_context=run_context, 
+            # redis_handler=redis_handler, # Sẽ truyền run_context vào process_single_section_external_links
+            run_context=run_context, # Tạm thời truyền vào đây
             config=config,
             openai_api_key=openai_api_key,
             google_api_key=google_api_key,
-            unique_run_id=run_context.unique_run_id 
+            unique_run_id=run_context.unique_run_id # Vẫn cần unique_run_id cho _get_redis_exlinks_array_key (sẽ sửa sau)
         )
         current_section_copy['current_html_content'] = updated_content
         updated_sections_list.append(current_section_copy)

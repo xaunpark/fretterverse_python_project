@@ -18,6 +18,7 @@ from utils.api_clients import (
     call_openai_embeddings
 )
 from utils.google_sheets_handler import GoogleSheetsHandler
+# from utils.redis_handler import RedisHandler # Sẽ loại bỏ dần
 from utils.pinecone_handler import PineconeHandler
 from utils.image_utils import resize_image
 from utils.db_handler import MySQLHandler
@@ -1199,24 +1200,19 @@ def _generate_section_id_from_name(section_name):
     return s if s else "section" # Fallback nếu tên rỗng sau khi chuẩn hóa
 
 
-def assemble_full_html_step(sections_final_content_structure, 
-                            final_image_data_list, 
-                            final_video_data_list, 
-                            article_meta, 
-                            processed_sections_list_from_step2, 
-                            config):
-
+def assemble_full_html_step(sub_workflow_results, article_meta, processed_sections_list_from_step2, config):
     """
     Ghép nối tất cả nội dung, ảnh, video, bảng so sánh thành một chuỗi HTML hoàn chỉnh.
     sub_workflow_results: Kết quả từ Bước 4.
     processed_sections_list_from_step2: Dùng để lấy productList cho bảng so sánh.
     """
-    if not sections_final_content_structure:
+    if not sub_workflow_results or not sub_workflow_results.get("sections_final_content_structure"):
         logger.error("Missing processed sections from sub-workflows. Cannot assemble HTML.")
         return None
 
-    image_data_map = {item['index']: item for item in (final_image_data_list or []) if item.get('url') and 'error' not in item.get('url') and 'skip' not in item.get('url')}
-    video_data_map = {item['index']: item for item in (final_video_data_list or []) if item.get('videoID') and item.get('videoID') != 'none'}
+    sections_to_assemble = sub_workflow_results.get("sections_final_content_structure")
+    image_data_map = {item['index']: item for item in sub_workflow_results.get("final_image_data_list", []) if item.get('url') and 'error' not in item.get('url') and 'skip' not in item.get('url')}
+    video_data_map = {item['index']: item for item in sub_workflow_results.get("final_video_data_list", []) if item.get('videoID') and item.get('videoID') != 'none'}
 
     # 1. Tạo bảng so sánh nếu cần
     comparison_table_html_content = _generate_comparison_table_if_needed(
@@ -1228,7 +1224,7 @@ def assemble_full_html_step(sections_final_content_structure,
     full_html_parts = []
     is_comparison_table_inserted = False
 
-    for section_data in sections_final_content_structure:
+    for section_data in sections_to_assemble:
         s_name = section_data.get("sectionName", "Unnamed Section")
         s_type = section_data.get("sectionType")
         s_index = section_data.get("sectionIndex")
@@ -1736,12 +1732,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 4: Xử lý Sub-Workflows (Images, Videos, External Links) ---
     logger.info("--- Running Step 4: Process Sub-Workflows ---")
     sub_workflow_outputs = process_sub_workflows_step(
-        sections_with_initial_content=sections_with_content, 
+        sections_with_initial_content=sections_with_content,
         article_meta=outline_results.get("article_meta"),
-        run_context=run_context, # Truyền run_context
-        config=config
+        config=config,
+        unique_run_id=current_run_id # Truyền unique_run_id
     )
-
     if not sub_workflow_outputs:
         logger.error(f"Step 4 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 4, "reason": "Sub-workflow processing failed", "keyword": keyword_to_process}
@@ -1749,14 +1744,11 @@ def orchestrate_article_creation(keyword_to_process: str,
     # --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh ---
     logger.info("--- Running Step 5: Assemble Full HTML ---")
     full_html = assemble_full_html_step(
-        sections_final_content_structure=sub_workflow_outputs.get("sections_final_content_structure"),
-        final_image_data_list=sub_workflow_outputs.get("final_image_data_list"),
-        final_video_data_list=sub_workflow_outputs.get("final_video_data_list"),
+        sub_workflow_results=sub_workflow_outputs,
         article_meta=outline_results.get("article_meta"),
         processed_sections_list_from_step2=outline_results.get("processed_sections_list"),
         config=config
     )
-
     if not full_html:
         logger.error(f"Step 5 failed for keyword '{keyword_to_process}'. Aborting orchestration.")
         return {"status": "failed", "step": 5, "reason": "HTML assembly failed", "keyword": keyword_to_process}

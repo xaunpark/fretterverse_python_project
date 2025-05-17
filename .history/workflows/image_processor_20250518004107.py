@@ -8,6 +8,7 @@ from utils.api_clients import ( # Đã import perform_search ở file trước
     perform_search, # Sử dụng perform_search thay vì google_search trực tiếp
     upload_wp_media
 )
+# from utils.redis_handler import RedisHandler # Sẽ được thay thế bởi RunContext
 from utils.image_utils import resize_image
 from prompts import image_prompts
 # from utils.config_loader import APP_CONFIG # Import config của bạn
@@ -18,6 +19,15 @@ logger = logging.getLogger(__name__)
 # MAX_IMAGE_SELECTION_ATTEMPTS = 3 # Số lần thử chọn ảnh khác nhau cho 1 section
 # IMAGE_DOWNLOAD_TIMEOUT = 10 # giây
 # IMAGE_PROCESS_RETRY_DELAY = 5 # giây
+
+def _get_redis_keys(config, unique_run_id):
+    """Helper to generate Redis keys for this image processing run."""
+    return {
+        "image_array": f"{config.get('REDIS_KEY_IMAGE_ARRAY_PREFIX', 'fvp_image_array_')}{unique_run_id}",
+        "failed_urls": f"{config.get('REDIS_KEY_FAILED_IMAGE_URLS_PREFIX', 'fvp_failed_image_urls_')}{unique_run_id}",
+        "used_urls": f"{config.get('REDIS_KEY_USED_IMAGE_URLS_PREFIX', 'fvp_used_image_urls_')}{unique_run_id}",
+        "current_image_search_results_prefix": f"fvp_img_search_results_{unique_run_id}_section_"
+    }
 
 def _should_skip_image(section_data):
     """Kiểm tra xem có nên bỏ qua việc chèn ảnh cho section này không."""
@@ -67,20 +77,19 @@ def _filter_image_search_results(image_search_list, failed_urls_list):
 
 
 def process_single_section_image(section_data, article_title, parent_section_name_for_subchapter,
-                                 run_context, # Thay redis_handler bằng run_context
-                                 config, openai_api_key, google_api_key,
+                                 redis_handler, config, openai_api_key, google_api_key,
                                  wp_auth_tuple, unique_run_id, section_index_for_redis_key): # google_api_key có thể không cần trực tiếp nữa
     """
     Xử lý tìm, chọn, và upload ảnh cho MỘT section.
     Trả về dict chứa thông tin ảnh đã upload (url, index) hoặc thông tin lỗi.
-    section_index_for_redis_key: dùng làm key trong run_context.image_search_cache_per_section.
+    section_index_for_redis_key: dùng để tạo key redis duy nhất cho image_search_results của section này.
     """
     max_selection_attempts = config.get('MAX_IMAGE_SELECTION_ATTEMPTS', 3)
     download_timeout = config.get('IMAGE_DOWNLOAD_TIMEOUT', 10)
     retry_delay = config.get('IMAGE_PROCESS_RETRY_DELAY', 5)
     
-    # Không cần redis_keys nữa
-    # current_section_image_search_key sẽ là section_index_for_redis_key (là một số int)
+    redis_keys = _get_redis_keys(config, unique_run_id)
+    current_section_image_search_key = f"{redis_keys['current_image_search_results_prefix']}{section_index_for_redis_key}"
 
     # ----- BƯỚC 1: Lấy hoặc tạo từ khóa tìm ảnh -----
     logger.info(f"Processing image for section: {section_data.get('sectionName')}")
@@ -110,9 +119,9 @@ def process_single_section_image(section_data, article_title, parent_section_nam
     encoded_keyword = urllib.parse.quote_plus(image_keyword)
 
     # ----- BƯỚC 2: Tìm kiếm ảnh trên Google -----
-    # Lấy danh sách image search results từ RunContext nếu đã có
-    # Hoặc tìm mới và lưu vào RunContext
-    image_search_results = run_context.image_search_cache_per_section.get(section_index_for_redis_key)
+    # Lấy danh sách image search results từ Redis nếu đã có (cho lần thử lại của section này)
+    # Hoặc tìm mới và lưu vào Redis
+    image_search_results = redis_handler.get_value(current_section_image_search_key)
     if not image_search_results:
         logger.info(f"No cached image search results for section {section_data.get('sectionName')}. Searching Google...")
 
@@ -132,7 +141,7 @@ def process_single_section_image(section_data, article_title, parent_section_nam
         
         image_search_results = _parse_search_results_for_images(search_results_standardized)
         if image_search_results:
-            run_context.image_search_cache_per_section[section_index_for_redis_key] = image_search_results # Cache vào RunContext
+            redis_handler.set_value(current_section_image_search_key, image_search_results) # Cache lại
         else:
             logger.warning(f"No images found from Google Search for keyword: '{image_keyword}'")
             return {"url": "no_images_found_google", "index": section_data.get('sectionIndex')}
@@ -145,8 +154,8 @@ def process_single_section_image(section_data, article_title, parent_section_nam
         logger.info(f"Image selection attempt {attempt + 1}/{max_selection_attempts} for section '{section_data.get('sectionName')}'")
 
         # Lọc bỏ các URL đã thất bại (từ Redis global failed_urls)
-        # failed_urls_global = redis_handler.get_value(redis_keys['failed_urls']) or [] # Sẽ đọc từ run_context
-        current_image_options_list = _filter_image_search_results(image_search_results, run_context.failed_image_urls)
+        failed_urls_global = redis_handler.get_value(redis_keys['failed_urls']) or []
+        current_image_options_list = _filter_image_search_results(image_search_results, failed_urls_global)
 
         if not current_image_options_list:
             logger.warning(f"No image options left to try for section '{section_data.get('sectionName')}' after filtering failed URLs.")
@@ -212,16 +221,17 @@ def process_single_section_image(section_data, article_title, parent_section_nam
 
         # Kiểm tra xem URL này đã được sử dụng cho bài viết này chưa (từ Redis global used_urls)
         # Để tránh ảnh bị trùng lặp quá nhiều trong cùng một bài.
-        # used_urls_global = redis_handler.get_value(redis_keys['used_urls']) or [] # Sẽ đọc từ run_context
-        if selected_image_url in run_context.used_image_urls:
+        used_urls_global = redis_handler.get_value(redis_keys['used_urls']) or []
+        if selected_image_url in used_urls_global:
             logger.info(f"Image URL '{selected_image_url}' has already been used in this article. Adding to failed list for this section and retrying.")
             # Thêm vào failed_urls_global để không thử lại URL này cho bất kỳ section nào nữa
             # Và loại nó khỏi image_search_results của section hiện tại để không bị OpenAI chọn lại
-            run_context.failed_image_urls.add(selected_image_url) # Thêm vào set
+            failed_urls_global.append(selected_image_url)
+            redis_handler.set_value(redis_keys['failed_urls'], list(set(failed_urls_global))) # Lưu lại list unique
             
             # Cập nhật image_search_results của section này (trong Redis) bằng cách loại bỏ URL vừa thử
             image_search_results = [img for img in image_search_results if img.get('imageUrl') != selected_image_url]
-            run_context.image_search_cache_per_section[section_index_for_redis_key] = image_search_results # Cập nhật cache trong RunContext
+            redis_handler.set_value(current_section_image_search_key, image_search_results)
             
             time.sleep(retry_delay) # Chờ trước khi thử lại với các ảnh còn lại
             continue # Thử chọn ảnh khác từ list đã được lọc
@@ -243,9 +253,10 @@ def process_single_section_image(section_data, article_title, parent_section_nam
         except Exception as e:
             logger.error(f"Failed to download image '{selected_image_url}': {e}")
             # Thêm vào failed_urls_global và cập nhật image_search_results của section
-            run_context.failed_image_urls.add(selected_image_url)
+            failed_urls_global.append(selected_image_url)
+            redis_handler.set_value(redis_keys['failed_urls'], list(set(failed_urls_global)))
             image_search_results = [img for img in image_search_results if img.get('imageUrl') != selected_image_url]
-            run_context.image_search_cache_per_section[section_index_for_redis_key] = image_search_results
+            redis_handler.set_value(current_section_image_search_key, image_search_results)
             time.sleep(retry_delay)
             continue # Thử chọn ảnh khác
 
@@ -261,9 +272,10 @@ def process_single_section_image(section_data, article_title, parent_section_nam
         )
         if not resized_image_data:
             logger.error(f"Failed to resize image from URL: {selected_image_url}")
-            run_context.failed_image_urls.add(selected_image_url)
+            failed_urls_global.append(selected_image_url)
+            redis_handler.set_value(redis_keys['failed_urls'], list(set(failed_urls_global)))
             image_search_results = [img for img in image_search_results if img.get('imageUrl') != selected_image_url]
-            run_context.image_search_cache_per_section[section_index_for_redis_key] = image_search_results
+            redis_handler.set_value(current_section_image_search_key, image_search_results)
             time.sleep(retry_delay)
             continue # Thử chọn ảnh khác
 
@@ -285,27 +297,26 @@ def process_single_section_image(section_data, article_title, parent_section_nam
             wp_image_url = wp_media_response.get('source_url')
             logger.info(f"Image successfully uploaded to WordPress for section '{s_name}'. URL: {wp_image_url}")
             
-            # Thêm vào run_context.used_image_urls để không dùng lại cho section khác
-            run_context.used_image_urls.add(selected_image_url) # Lưu URL gốc đã chọn
+            # Thêm vào used_urls_global để không dùng lại cho section khác
+            used_urls_global.append(selected_image_url) # Lưu URL gốc đã chọn, không phải URL WP
+            redis_handler.set_value(redis_keys['used_urls'], list(set(used_urls_global)))
 
-            # Không cần xóa cache image_search_results của section này khỏi RunContext
-            # vì nó sẽ tự bị hủy khi RunContext bị hủy.
-            # Nếu muốn xóa để tiết kiệm bộ nhớ ngay lập tức (không cần thiết lắm):
-            # if section_index_for_redis_key in run_context.image_search_cache_per_section:
-            #     del run_context.image_search_cache_per_section[section_index_for_redis_key]
+            # Xóa cache image_search_results của section này vì đã xử lý xong
+            redis_handler.delete_key(current_section_image_search_key)
 
             return {"url": wp_image_url, "index": section_data.get('sectionIndex'), "alt_text": selected_image_des}
         else:
             logger.error(f"Failed to upload image to WordPress for section '{s_name}'. Original URL: {selected_image_url}. Response: {wp_media_response}")
-            run_context.failed_image_urls.add(selected_image_url)
+            failed_urls_global.append(selected_image_url)
+            redis_handler.set_value(redis_keys['failed_urls'], list(set(failed_urls_global)))
             image_search_results = [img for img in image_search_results if img.get('imageUrl') != selected_image_url]
-            run_context.image_search_cache_per_section[section_index_for_redis_key] = image_search_results
+            redis_handler.set_value(current_section_image_search_key, image_search_results)
             time.sleep(retry_delay)
             # continue # Thử chọn ảnh khác (vòng lặp sẽ tự làm)
 
     # Nếu hết vòng lặp mà không thành công
     logger.warning(f"Exhausted all attempts or options for section '{section_data.get('sectionName')}'. No image uploaded.")
-    # Không cần xóa cache khỏi RunContext ở đây
+    redis_handler.delete_key(current_section_image_search_key) # Dọn dẹp cache
     return {"url": "error_max_attempts_or_no_options", "index": section_data.get('sectionIndex')}
 
 
@@ -329,8 +340,19 @@ def process_images_for_article(sections_data_list, article_title, run_context, c
         logger.error("Missing critical API keys, WordPress credentials, or Google CX ID in config for image processing.")
         return [{"url": "config_error", "index": s.get('sectionIndex')} for s in sections_data_list]
 
-    # run_context đã được khởi tạo với các list/set rỗng
+    # redis_handler = RedisHandler(config=config) # Sẽ thay thế bằng run_context
+    # if not redis_handler.is_connected():
+    #     logger.error("Cannot connect to Redis. Aborting image processing.")
+    #     return [{"url": "redis_connection_error", "index": s.get('sectionIndex')} for s in sections_data_list]
 
+    # Khởi tạo các key Redis cần thiết cho lần chạy này
+    # redis_keys = _get_redis_keys(config, run_context.unique_run_id) # Sẽ dùng run_context trực tiếp
+    # run_context đã được khởi tạo với các list/set rỗng
+    # redis_handler.initialize_array_if_not_exists(redis_keys['image_array'], "[]")
+    # redis_handler.initialize_array_if_not_exists(redis_keys['failed_urls'], "[]")
+    # redis_handler.initialize_array_if_not_exists(redis_keys['used_urls'], "[]")
+
+    # final_image_array_from_redis = [] # Sẽ lưu vào run_context.processed_image_data
     parent_chapter_name = None # Theo dõi chapter cha cho các subchapter
     for i, section in enumerate(sections_data_list):
         if section.get('sectionType') == 'chapter':
@@ -350,12 +372,13 @@ def process_images_for_article(sections_data_list, article_title, run_context, c
                 section_data=section,
                 article_title=article_title,
                 parent_section_name_for_subchapter=parent_name_for_sub,
-                run_context=run_context, 
+                # redis_handler=redis_handler, # Sẽ truyền run_context vào process_single_section_image
+                run_context=run_context, # Tạm thời truyền vào đây, hàm con sẽ cần sửa để dùng
                 config=config,
                 openai_api_key=openai_api_key,
                 google_api_key=google_api_key,
                 wp_auth_tuple=wp_auth,
-                unique_run_id=run_context.unique_run_id, 
+                unique_run_id=run_context.unique_run_id, # Vẫn cần unique_run_id cho _get_redis_keys bên trong process_single_section_image (sẽ sửa sau)
                 section_index_for_redis_key=i # Dùng index trong list làm ID cho key cache
             )
             current_image_data_for_section = image_result

@@ -5,7 +5,8 @@ import re
 import html 
 import urllib.parse 
 from bs4 import BeautifulSoup
-from utils.api_clients import call_openai_chat, perform_search
+from utils.api_clients import call_openai_chat, perform_search 
+# from utils.redis_handler import RedisHandler # Sẽ được thay thế bởi RunContext
 from prompts import external_link_prompts
 
 logger = logging.getLogger(__name__)
