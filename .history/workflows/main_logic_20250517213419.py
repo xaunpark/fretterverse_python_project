@@ -5,7 +5,6 @@ import re
 import time # Cho việc sleep nếu cần
 import html
 import requests
-from bs4 import BeautifulSoup # Thêm BeautifulSoup
 from utils.api_clients import (
     call_openai_dalle, 
     create_wp_category, 
@@ -14,7 +13,7 @@ from utils.api_clients import (
     create_wp_post, 
     update_wp_post,
     call_openai_chat,
-    perform_search, # Thay thế google_search bằng perform_search
+    perform_search,
     call_openai_embeddings
 )
 from utils.google_sheets_handler import GoogleSheetsHandler
@@ -713,15 +712,15 @@ def _generate_prompt_for_section_content(section_data, article_meta, chosen_auth
     s_type = section_data.get("sectionType")
     s_name_tag = section_data.get("sectionNameTag", "").lower()
     s_model_role = section_data.get("modelRole", "N/A")
-    s_length = section_data.get("length", 200) # Độ dài mặc định
+    s_length = section_data.get("length", config.get("DEFAULT_CHAPTER_LENGTH", 200)) # Độ dài mặc định
     s_hook_text = section_data.get("sectionHook", "")
-    s_author_info = section_data.get("authorInfo", chosen_author_data.get("info", "")) # Dùng author info chung nếu section không có info riêng
+    s_author_info = section_data.get("authorInfo", chosen_author_data.get("info", "")) 
     s_semantic_keywords_list = section_data.get("separatedSemanticKeyword", [])
     s_semantic_keywords_str = ", ".join(s_semantic_keywords_list) if isinstance(s_semantic_keywords_list, list) else (s_semantic_keywords_list or "")
 
     article_title = article_meta.get("title", "N/A Article Title")
-    # article_type = article_meta.get("article_type", "N/A Type") # Có thể cần cho một số prompt
-    selected_model = preparation_data.get("keyword_analysis", {}).get("selectedModel", "N/A") # Lấy từ preparation_data
+    article_type_from_meta = article_meta.get("article_type", "").lower() # Lấy article_type từ meta
+    selected_model = preparation_data.get("keyword_analysis", {}).get("selectedModel", "N/A")
     
     author_name = chosen_author_data.get("name", "The Author")
 
@@ -731,54 +730,66 @@ def _generate_prompt_for_section_content(section_data, article_meta, chosen_auth
 
     prompt_template = None
 
+    # --- Xử lý các section đặc biệt trước ---
     if s_name_tag == "introduction":
-        # Sử dụng prompt có lựa chọn hook, cần thêm {keyword_for_hook}
-        # Giả sử keyword_for_hook là original_keyword
         keyword_for_hook = section_data.get("original_keyword", article_title)
         prompt_template = content_prompts.WRITE_INTRODUCTION_PROMPT_WITH_HOOK_CHOICES
         return prompt_template.format(
             length=s_length,
             article_title=article_title,
-            keyword_for_hook=keyword_for_hook, # Placeholder mới
+            keyword_for_hook=keyword_for_hook,
             semantic_keywords=s_semantic_keywords_str,
             author_name=author_name,
-            author_info=s_author_info, # authorInfo cụ thể cho section Intro
+            author_info=s_author_info,
             section_names_list=all_section_names_list_str
         )
+    
+    # --- LOGIC MỚI CHO "TOP RATED CHAPTER OVERVIEW" ---
+    elif s_type == 'chapter' and s_name_tag == "top rated" and "type 1" in article_type_from_meta:
+        logger.info(f"Section '{s_name}' is a 'Top Rated' chapter overview for a 'Type 1' article. Using specific overview prompt.")
+        prompt_template = content_prompts.WRITE_TOP_RATED_CHAPTER_OVERVIEW_PROMPT # Sẽ tạo prompt này ở bước sau
+        
+        # Lấy product_list_for_overview từ section_data (sẽ được thêm ở write_content_for_all_sections_step)
+        product_list_str = section_data.get("product_list_for_overview", "various top-rated products")
+        
+        # Độ dài riêng cho overview, có thể lấy từ config hoặc hardcode một giá trị ngắn
+        overview_length = config.get("TOP_RATED_OVERVIEW_LENGTH", 120) # Ví dụ: 120 từ
+
+        return prompt_template.format(
+            length=overview_length,
+            article_title=article_title,
+            section_name=s_name,
+            product_list_string=product_list_str,
+            author_name=author_name,
+            author_info=s_author_info, # Có thể dùng author info chung hoặc của section
+            semantic_keywords=s_semantic_keywords_str,
+            section_names_list=all_section_names_list_str
+        )
+    # --- KẾT THÚC LOGIC MỚI ---
+
     elif s_name_tag == "conclusion":
         prompt_template = content_prompts.WRITE_CONCLUSION_PROMPT
+        # Format ở cuối hàm
     elif s_name_tag == "faqs":
         prompt_template = content_prompts.WRITE_FAQ_SECTION_PROMPT
-        # FAQ prompt chỉ cần article_title
-        return prompt_template.format(article_title=article_title)
+        return prompt_template.format(article_title=article_title) # FAQ prompt chỉ cần article_title
 
-    # Xử lý các chapter/subchapter thông thường
+    # --- Xử lý các chapter/subchapter thông thường ---
     elif s_type == 'chapter':
-        if s_name_tag == "top rated": # Yêu cầu: Chương "Top Rated" của Type 1 sẽ không có content
-            logger.info(f"Section '{s_name}' (Top Rated) is treated as a container, using 'SAY_I_LOVE_YOU_PROMPT'.")
-            return content_prompts.SAY_I_LOVE_YOU_PROMPT
-            
-        # Kiểm tra nếu chapter này chỉ là container (ví dụ: motherChapter='yes' và không có tag đặc biệt)
-        # Dựa trên logic n8n của bạn: `sectionType === 'chapter' && nextSection?.sectionType === 'subchapter'`
-        # Điều này khó xác định ở đây nếu chỉ dựa vào `section_data` đơn lẻ.
-        # Giả định: nếu là motherChapter và không phải Intro/Conclusion/FAQ (TopRated đã được xử lý ở trên), 
-        # thì có thể là container.
-        if section_data.get("motherChapter") == "yes" and s_name_tag not in ["introduction", "conclusion", "faqs"]:
-             logger.info(f"Section '{s_name}' is a motherChapter (and not intro/conclusion/faqs/top_rated), using 'SAY_I_LOVE_YOU_PROMPT'.")
-             return content_prompts.SAY_I_LOVE_YOU_PROMPT # Không cần format
+        # Kiểm tra nếu chapter này chỉ là container (motherChapter='yes' và không có tag đặc biệt)
+        if section_data.get("motherChapter") == "yes" and s_name_tag not in ["introduction", "conclusion", "faqs", "top rated"]:
+             logger.info(f"Section '{s_name}' is a motherChapter and not a special type, using 'SAY_I_LOVE_YOU_PROMPT'.")
+             return content_prompts.SAY_I_LOVE_YOU_PROMPT # Không cần format, trả về ngay
         prompt_template = content_prompts.WRITE_CHAPTER_PROMPT
+        # Format ở cuối hàm
     
     elif s_type == 'subchapter':
         if s_name_tag == "product": # Đây là Product Review Subchapter
             prompt_template = content_prompts.WRITE_PRODUCT_REVIEW_SUBCHAPTER_PROMPT
-            # Product review cần thêm {headline} và {product_list}
-            # product_list cần được tạo từ danh sách các subchapter có sectionNameTag="Product"
-            # Việc này nên được thực hiện ở hàm gọi và truyền vào đây.
-            # Tạm thời để placeholder, sẽ cần logic tạo product_list_str riêng.
             return prompt_template.format(
                 length=s_length,
                 section_name=s_name,
-                headline=section_data.get("headline", f"Review of {s_name}"), # Lấy headline từ section_data
+                headline=section_data.get("headline", f"Review of {s_name}"),
                 parent_section_name=section_data.get("parentChapterName", "the main topic"),
                 article_title=article_title,
                 model_role=s_model_role,
@@ -787,7 +798,7 @@ def _generate_prompt_for_section_content(section_data, article_meta, chosen_auth
                 semantic_keywords=s_semantic_keywords_str,
                 author_name=author_name,
                 author_info=s_author_info,
-                product_list=section_data.get("product_list_for_comparison", "other related products"), # Cần truyền vào
+                product_list=section_data.get("product_list_for_comparison", "other related products"),
                 section_names_list=all_section_names_list_str
             )
         else: # Subchapter thông thường
@@ -806,14 +817,15 @@ def _generate_prompt_for_section_content(section_data, article_meta, chosen_auth
                 section_names_list=all_section_names_list_str
             )
     
-    if not prompt_template: # Trường hợp không xác định được template (không nên xảy ra)
-        logger.error(f"Could not determine prompt template for section: {s_name}, type: {s_type}, tag: {s_name_tag}")
-        return None
+    if not prompt_template: 
+        logger.error(f"Could not determine prompt template for section: {s_name}, type: {s_type}, tag: {s_name_tag}. This should not happen.")
+        return None # Hoặc trả về một prompt mặc định an toàn
 
-    # Format cho các prompt còn lại (Conclusion, Chapter)
+    # Format cho các prompt còn lại (Conclusion, Chapter thường)
+    # Các prompt đã return sớm sẽ không đi qua đây.
     return prompt_template.format(
         length=s_length,
-        section_name=s_name, # Chỉ có ở WRITE_CHAPTER_PROMPT
+        section_name=s_name, 
         article_title=article_title,
         model_role=s_model_role,
         selected_model=selected_model,
@@ -852,12 +864,22 @@ def write_content_for_all_sections_step(processed_sections_list, article_meta, p
     # Gán product_list_for_comparison vào từng section_data nếu là product
     for section_data in processed_sections_list:
         if section_data.get("sectionType") == "subchapter" and section_data.get("sectionNameTag", "").lower() == "product":
-            section_data["product_list_for_comparison"] = product_list_for_comparison_str
+            # Đảm bảo key này được thêm vào section_data gốc để khi section_copy được tạo, nó đã có sẵn
+            section_data["product_list_for_comparison"] = product_list_for_comparison_str # Giữ lại cho Product Review prompt
 
 
     for section_data in processed_sections_list:
         section_copy = dict(section_data) # Làm việc trên bản copy
         logger.info(f"--- Writing content for section: {section_copy.get('sectionName')} (Index: {section_copy.get('sectionIndex')}) ---")
+
+        # --- THÊM LOGIC CHO BƯỚC 4 ---
+        # Nếu là "Top Rated" chapter của "Type 1", thêm product_list_for_comparison_str vào section_copy
+        # để _generate_prompt_for_section_content có thể sử dụng cho prompt overview.
+        if section_copy.get("sectionType") == 'chapter' and \
+           section_copy.get("sectionNameTag", "").lower() == "top rated" and \
+           "type 1" in article_meta.get("article_type", "").lower():
+            section_copy["product_list_for_overview"] = product_list_for_comparison_str
+        # --- KẾT THÚC LOGIC BƯỚC 4 ---
 
         prompt_for_llm = _generate_prompt_for_section_content(
             section_data=section_copy,
@@ -1049,12 +1071,11 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, conf
 ######################################################
 #### --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh --- ####
 ######################################################
-from bs4 import BeautifulSoup # Đảm bảo đã import ở đầu file
 
-def _generate_comparison_table_if_needed(article_meta, processed_sections_list_for_table, config):
+def _generate_comparison_table_if_needed(article_meta, processed_sections_list, config):
     """
     Nếu là Article Type 1, tạo productList và gọi LLM để tạo HTML bảng so sánh.
-    processed_sections_list_for_table: Danh sách section đã được flatten từ Bước 2 (dùng để lấy productList và tạo anchor IDs).
+    processed_sections_list: Danh sách section đã được flatten từ Bước 2 (dùng để lấy productList).
     """
     article_type = article_meta.get("article_type", "").lower()
     article_title = article_meta.get("title", "N/A")
@@ -1065,19 +1086,19 @@ def _generate_comparison_table_if_needed(article_meta, processed_sections_list_f
 
     # Trích xuất productList từ processed_sections_list (các subchapter của "Top Rated" chapter)
     product_names = []
-    is_top_rated_chapter_found_for_list = False # Đổi tên biến để tránh nhầm lẫn
-    for section in processed_sections_list_for_table:
+    is_top_rated_chapter_found = False
+    for section in processed_sections_list:
         # Tìm chapter "Top Rated"
-        if section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() == "top rated": # Sửa ở đây
-            is_top_rated_chapter_found_for_list = True
+        if section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() == "top rated":
+            is_top_rated_chapter_found = True
             continue # Bỏ qua chính chapter "Top Rated"
         
         # Nếu đã tìm thấy "Top Rated" và section hiện tại là subchapter của nó
-        if is_top_rated_chapter_found_for_list and section.get("sectionType") == "subchapter" and section.get("sectionNameTag", "").lower() == "product":
+        if is_top_rated_chapter_found and section.get("sectionType") == "subchapter" and section.get("sectionNameTag", "").lower() == "product":
             product_names.append(section.get("sectionName"))
         
         # Nếu gặp chapter tiếp theo sau "Top Rated", dừng lại
-        if is_top_rated_chapter_found_for_list and section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() != "top rated":
+        if is_top_rated_chapter_found and section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() != "top rated":
             break # Dừng tìm product nếu đã qua khỏi các sub của Top Rated
 
     if not product_names:
@@ -1104,75 +1125,19 @@ def _generate_comparison_table_if_needed(article_meta, processed_sections_list_f
             openrouter_api_key=config.get('OPENROUTER_API_KEY'),
             openrouter_base_url=config.get('OPENROUTER_BASE_URL')
         )
-
-        if not comparison_table_html:
-            logger.error("LLM returned no response for comparison table.")
-            return None
-
-        processed_html = comparison_table_html.strip()
-
-        # 1. Strip Markdown code block if present
-        if processed_html.startswith("```html") and processed_html.endswith("```"):
-            processed_html = processed_html[len("```html"):-len("```")].strip()
-            logger.debug("Stripped ```html markdown block from comparison table response.")
-        elif processed_html.startswith("```") and processed_html.endswith("```"): # More generic markdown block
-            processed_html = processed_html[len("```"):-len("```")].strip()
-            logger.debug("Stripped ``` markdown block from comparison table response.")
-
-        # 2. Unescape HTML entities
-        # This is crucial because the log shows &lt;table&gt;
-        processed_html = html.unescape(processed_html)
-        logger.debug(f"After html.unescape (first 100 chars): {processed_html[:100]}")
-
-        # Now check and extract using the processed_html
-        if processed_html: # Check if processed_html is not empty or None
+        if comparison_table_html and "<table>" in comparison_table_html:
+            logger.info("Successfully generated HTML comparison table.")
             # Trong workflow n8n, bạn có node "Regex extractedTable".
             # Nếu LLM trả về nhiều text hơn chỉ là table, bạn cần trích xuất table.
-            match = re.search(r'(<table[\s\S]*?<\/table>)', processed_html, re.IGNORECASE | re.DOTALL)
+            # Giả sử LLM trả về HTML table sạch.
+            match = re.search(r'(<table[\s\S]*?<\/table>)', comparison_table_html, re.IGNORECASE | re.DOTALL)
             if match:
-                logger.info("Extracted <table> tag successfully from processed response.")
-            table_html_from_regex = match.group(1)
-            try:
-                soup = BeautifulSoup(table_html_from_regex, 'html.parser')
-                table_body = soup.find('tbody')
-                if table_body:
-                    # Tạo map từ tên sản phẩm (sectionName của subchapter review) đến ID section của nó
-                    product_review_sections = [
-                        s for s in processed_sections_list_for_table
-                        if s.get("sectionType") == "subchapter" and s.get("sectionNameTag", "").lower() == "product"
-                    ]
-                    product_name_to_id_map = {
-                        s.get("sectionName"): _generate_section_id_from_name(s.get("sectionName"))
-                        for s in product_review_sections
-                    }
-
-                    rows = table_body.find_all('tr')
-                    for row_idx, row in enumerate(rows):
-                        first_cell = row.find('td')
-                        if first_cell:
-                            product_name_in_cell = first_cell.get_text(strip=True)
-                            # Cố gắng khớp tên sản phẩm từ cell với sectionName
-                            # Giả định sectionName là tên sản phẩm chính xác mà LLM cũng dùng trong bảng
-                            if product_name_in_cell in product_name_to_id_map:
-                                anchor_id = product_name_to_id_map[product_name_in_cell]
-                                new_a_tag = soup.new_tag("a", href=f"#{anchor_id}")
-                                new_a_tag.string = product_name_in_cell
-                                first_cell.clear()
-                                first_cell.append(new_a_tag)
-                                logger.debug(f"Created anchor link for '{product_name_in_cell}' to '#{anchor_id}' in comparison table row {row_idx}.")
-                return str(soup) # Trả về HTML đã được sửa đổi
-            except Exception as e_bs4:
-                logger.error(f"Error modifying comparison table HTML with BeautifulSoup: {e_bs4}", exc_info=True)
-                return table_html_from_regex # Trả về HTML gốc nếu parse/sửa lỗi
+                return match.group(1)
             else:
-                # This 'else' means a table structure was not found by the regex.
-                # This will correctly handle cases like "I am unable to generate a table..."
-                logger.error(f"Failed to find/extract <table>...</table> block using regex. Original raw response (first 200 chars): {comparison_table_html[:200]}. Processed response (first 200 chars): {processed_html[:200]}")
-                return None
+                logger.warning("Could not extract <table> from LLM response for comparison table. Using full response.")
+                return comparison_table_html # Hoặc xử lý lỗi
         else:
-            # This case handles if processed_html became empty after stripping/unescaping,
-            # or if comparison_table_html was empty/None to begin with.
-            logger.error(f"Processed HTML is empty or None. Original raw response (first 200 chars): {comparison_table_html[:200] if comparison_table_html else 'N/A'}")
+            logger.error(f"Failed to generate valid HTML for comparison table. Response: {comparison_table_html[:200]}...")
             return None
     except Exception as e:
         logger.error(f"Error generating comparison table: {e}", exc_info=True)

@@ -5,7 +5,6 @@ import re
 import time # Cho việc sleep nếu cần
 import html
 import requests
-from bs4 import BeautifulSoup # Thêm BeautifulSoup
 from utils.api_clients import (
     call_openai_dalle, 
     create_wp_category, 
@@ -1049,12 +1048,11 @@ def process_sub_workflows_step(sections_with_initial_content, article_meta, conf
 ######################################################
 #### --- Bước 5: Tạo Nội dung HTML Hoàn chỉnh --- ####
 ######################################################
-from bs4 import BeautifulSoup # Đảm bảo đã import ở đầu file
 
-def _generate_comparison_table_if_needed(article_meta, processed_sections_list_for_table, config):
+def _generate_comparison_table_if_needed(article_meta, processed_sections_list, config):
     """
     Nếu là Article Type 1, tạo productList và gọi LLM để tạo HTML bảng so sánh.
-    processed_sections_list_for_table: Danh sách section đã được flatten từ Bước 2 (dùng để lấy productList và tạo anchor IDs).
+    processed_sections_list: Danh sách section đã được flatten từ Bước 2 (dùng để lấy productList).
     """
     article_type = article_meta.get("article_type", "").lower()
     article_title = article_meta.get("title", "N/A")
@@ -1065,19 +1063,19 @@ def _generate_comparison_table_if_needed(article_meta, processed_sections_list_f
 
     # Trích xuất productList từ processed_sections_list (các subchapter của "Top Rated" chapter)
     product_names = []
-    is_top_rated_chapter_found_for_list = False # Đổi tên biến để tránh nhầm lẫn
-    for section in processed_sections_list_for_table:
+    is_top_rated_chapter_found = False
+    for section in processed_sections_list:
         # Tìm chapter "Top Rated"
-        if section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() == "top rated": # Sửa ở đây
-            is_top_rated_chapter_found_for_list = True
+        if section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() == "top rated":
+            is_top_rated_chapter_found = True
             continue # Bỏ qua chính chapter "Top Rated"
         
         # Nếu đã tìm thấy "Top Rated" và section hiện tại là subchapter của nó
-        if is_top_rated_chapter_found_for_list and section.get("sectionType") == "subchapter" and section.get("sectionNameTag", "").lower() == "product":
+        if is_top_rated_chapter_found and section.get("sectionType") == "subchapter" and section.get("sectionNameTag", "").lower() == "product":
             product_names.append(section.get("sectionName"))
         
         # Nếu gặp chapter tiếp theo sau "Top Rated", dừng lại
-        if is_top_rated_chapter_found_for_list and section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() != "top rated":
+        if is_top_rated_chapter_found and section.get("sectionType") == "chapter" and section.get("sectionNameTag", "").lower() != "top rated":
             break # Dừng tìm product nếu đã qua khỏi các sub của Top Rated
 
     if not product_names:
@@ -1122,57 +1120,22 @@ def _generate_comparison_table_if_needed(article_meta, processed_sections_list_f
         # 2. Unescape HTML entities
         # This is crucial because the log shows &lt;table&gt;
         processed_html = html.unescape(processed_html)
-        logger.debug(f"After html.unescape (first 100 chars): {processed_html[:100]}")
+        logger.debug("Applied html.unescape to comparison table response.")
 
         # Now check and extract using the processed_html
-        if processed_html: # Check if processed_html is not empty or None
+        if processed_html and "<table>" in processed_html:
+            logger.info("Successfully processed HTML for comparison table from LLM.")
             # Trong workflow n8n, bạn có node "Regex extractedTable".
             # Nếu LLM trả về nhiều text hơn chỉ là table, bạn cần trích xuất table.
             match = re.search(r'(<table[\s\S]*?<\/table>)', processed_html, re.IGNORECASE | re.DOTALL)
             if match:
                 logger.info("Extracted <table> tag successfully from processed response.")
-            table_html_from_regex = match.group(1)
-            try:
-                soup = BeautifulSoup(table_html_from_regex, 'html.parser')
-                table_body = soup.find('tbody')
-                if table_body:
-                    # Tạo map từ tên sản phẩm (sectionName của subchapter review) đến ID section của nó
-                    product_review_sections = [
-                        s for s in processed_sections_list_for_table
-                        if s.get("sectionType") == "subchapter" and s.get("sectionNameTag", "").lower() == "product"
-                    ]
-                    product_name_to_id_map = {
-                        s.get("sectionName"): _generate_section_id_from_name(s.get("sectionName"))
-                        for s in product_review_sections
-                    }
-
-                    rows = table_body.find_all('tr')
-                    for row_idx, row in enumerate(rows):
-                        first_cell = row.find('td')
-                        if first_cell:
-                            product_name_in_cell = first_cell.get_text(strip=True)
-                            # Cố gắng khớp tên sản phẩm từ cell với sectionName
-                            # Giả định sectionName là tên sản phẩm chính xác mà LLM cũng dùng trong bảng
-                            if product_name_in_cell in product_name_to_id_map:
-                                anchor_id = product_name_to_id_map[product_name_in_cell]
-                                new_a_tag = soup.new_tag("a", href=f"#{anchor_id}")
-                                new_a_tag.string = product_name_in_cell
-                                first_cell.clear()
-                                first_cell.append(new_a_tag)
-                                logger.debug(f"Created anchor link for '{product_name_in_cell}' to '#{anchor_id}' in comparison table row {row_idx}.")
-                return str(soup) # Trả về HTML đã được sửa đổi
-            except Exception as e_bs4:
-                logger.error(f"Error modifying comparison table HTML with BeautifulSoup: {e_bs4}", exc_info=True)
-                return table_html_from_regex # Trả về HTML gốc nếu parse/sửa lỗi
+                return match.group(1)
             else:
-                # This 'else' means a table structure was not found by the regex.
-                # This will correctly handle cases like "I am unable to generate a table..."
-                logger.error(f"Failed to find/extract <table>...</table> block using regex. Original raw response (first 200 chars): {comparison_table_html[:200]}. Processed response (first 200 chars): {processed_html[:200]}")
-                return None
+                logger.warning("Could not extract <table> tag using regex from processed LLM response. Using processed response as is, hoping it's just the table.")
+                return processed_html # Trả về HTML đã được xử lý, hy vọng nó chỉ là bảng
         else:
-            # This case handles if processed_html became empty after stripping/unescaping,
-            # or if comparison_table_html was empty/None to begin with.
-            logger.error(f"Processed HTML is empty or None. Original raw response (first 200 chars): {comparison_table_html[:200] if comparison_table_html else 'N/A'}")
+            logger.error(f"Failed to find '<table>' in processed LLM response. Original raw response (first 200 chars): {comparison_table_html[:200]}. Processed response (first 200 chars): {processed_html[:200]}")
             return None
     except Exception as e:
         logger.error(f"Error generating comparison table: {e}", exc_info=True)
