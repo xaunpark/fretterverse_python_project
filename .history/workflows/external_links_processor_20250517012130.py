@@ -90,12 +90,10 @@ def process_external_links_for_section(
     )
     anchor_texts_info_raw = call_openai_chat(
         [{"role": "user", "content": prompt_get_anchors}],
-        model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'), 
-        api_key=openai_api_key, # OpenAI API key gốc
-        is_json_output=True,
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        config.get('DEFAULT_OPENAI_CHAT_MODEL'), openai_api_key, 
+        # Thêm các tham số mới cho OpenRouter
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT'), is_json_output=True
     )
     
     # Kiểm tra định dạng của anchor_texts_info_raw
@@ -147,11 +145,9 @@ def process_external_links_for_section(
         )
         citation_search_keyword = call_openai_chat(
             [{"role": "user", "content": prompt_citation_keyword}],
-            model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'), 
-            api_key=openai_api_key, # OpenAI API key gốc
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            config.get('DEFAULT_OPENAI_CHAT_MODEL'), openai_api_key,
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT')
         )
         if not citation_search_keyword: continue
         logger.info(f"ExtLinks: Search keyword for '{anchor_text_original}': '{citation_search_keyword}'")
@@ -180,11 +176,9 @@ def process_external_links_for_section(
         )
         selected_url_string = call_openai_chat(
             [{"role": "user", "content": prompt_choose_exlink}],
-            model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'), 
-            api_key=openai_api_key, # OpenAI API key gốc
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            config.get('DEFAULT_OPENAI_CHAT_MODEL'), openai_api_key,
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT')
         )
         if not selected_url_string or selected_url_string == "NO_SUITABLE_LINK_FOUND": continue
         

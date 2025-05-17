@@ -29,9 +29,7 @@ def load_app_config():
             config[key] = getattr(settings, key)
 
     # Override/thêm từ biến môi trường (đã load từ .env hoặc có sẵn trong HĐH)
-    # Các biến trong .env nên trùng tên với các biến trong settings.py để dễ override
-    config['OPENROUTER_API_KEY'] = os.getenv('OPENROUTER_API_KEY', config.get('OPENROUTER_API_KEY'))
-    config['OPENROUTER_BASE_URL'] = os.getenv('OPENROUTER_BASE_URL', config.get('OPENROUTER_BASE_URL'))
+    # Biến OPENAI_API_KEY từ .env giờ sẽ được dùng làm OPENROUTER_API_KEY
     config['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
     config['GOOGLE_API_KEY'] = os.getenv('GOOGLE_API_KEY')
     config['YOUTUBE_API_KEY'] = os.getenv('YOUTUBE_API_KEY')
@@ -60,6 +58,7 @@ def load_app_config():
     config['PINECONE_API_KEY'] = os.getenv('PINECONE_API_KEY')
     config['PINECONE_ENVIRONMENT'] = os.getenv('PINECONE_ENVIRONMENT')
     config['PINECONE_INDEX_NAME'] = os.getenv('PINECONE_INDEX_NAME', config.get('PINECONE_INDEX_NAME_PLACEHOLDER'))
+    config['OPENROUTER_API_BASE_URL'] = os.getenv('OPENROUTER_API_BASE_URL', config.get('OPENROUTER_API_BASE_URL'))
 
 
     config['MAX_KEYWORDS_PER_RUN'] = int(os.getenv('MAX_KEYWORDS_PER_RUN', str(config.get('MAX_KEYWORDS_PER_RUN', 1))))
@@ -74,15 +73,7 @@ def load_app_config():
 
 
     # Kiểm tra các key quan trọng
-    required_keys = [
-        'OPENAI_API_KEY', # Vẫn cần cho DALL-E và Embeddings
-        'OPENROUTER_API_KEY', # Thêm key cho OpenRouter
-        'WP_BASE_URL', 
-        'WP_USER', 'WP_PASSWORD', 
-        'GSHEET_SPREADSHEET_ID', 
-        'PINECONE_API_KEY', 'PINECONE_ENVIRONMENT', 'PINECONE_INDEX_NAME'
-    ]
-    # GOOGLE_API_KEY và GOOGLE_CX_ID cũng quan trọng, có thể thêm vào nếu muốn bắt buộc
+    required_keys = ['OPENAI_API_KEY', 'WP_BASE_URL', 'WP_USER', 'WP_PASSWORD', 'GSHEET_SPREADSHEET_ID', 'PINECONE_API_KEY', 'PINECONE_ENVIRONMENT', 'PINECONE_INDEX_NAME']
     missing_keys = [key for key in required_keys if not config.get(key)]
     if missing_keys:
         raise ValueError(f"Missing required configuration keys: {', '.join(missing_keys)}")

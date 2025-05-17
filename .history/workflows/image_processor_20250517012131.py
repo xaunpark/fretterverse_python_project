@@ -100,10 +100,10 @@ def process_single_section_image(section_data, article_title, parent_section_nam
     image_keyword = call_openai_chat(
         [{"role": "user", "content": prompt_img_keyword}],
         config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-        api_key=openai_api_key, # OpenAI API key gốc
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        openai_api_key,
+        # Thêm các tham số mới cho OpenRouter
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT')
     )
     if not image_keyword:
         logger.error(f"Failed to generate image keyword for section: {section_data.get('sectionName')}")
@@ -188,11 +188,10 @@ def process_single_section_image(section_data, article_title, parent_section_nam
         chosen_image_info = call_openai_chat(
             [{"role": "user", "content": prompt_choose_image}],
             config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-            api_key=openai_api_key, # OpenAI API key gốc
-            is_json_output=True,
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            openai_api_key,
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True
         )
 
         if not chosen_image_info or not chosen_image_info.get('imageURL'):

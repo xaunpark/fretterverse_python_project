@@ -21,14 +21,15 @@ FEATURED_IMAGE_RESIZE_WIDTH = 800
 FEATURED_IMAGE_MODEL = "dall-e-3"
 FEATURED_IMAGE_SIZE = "1792x1024" # Kích thước DALL-E 3 hỗ trợ
 
+# --- Cấu hình cho OpenRouter (nếu sử dụng) ---
+OPENROUTER_API_BASE_URL = "https://openrouter.ai/api/v1" # URL cơ sở của OpenRouter API
+
 # --- Cấu hình cho OpenAI & LLMs ---
-DEFAULT_OPENAI_CHAT_MODEL = "openai/gpt-4o-mini" # Model mặc định cho OpenRouter (ví dụ)
-DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE = "openai/gpt-4o-mini" # Model cho outline qua OpenRouter
-DEFAULT_OPENAI_CHAT_MODEL_FOR_CONTENT = "openai/gpt-4o-mini" # Model cho viết content qua OpenRouter (có thể khác)
-DEFAULT_OPENAI_EMBEDDINGS_MODEL = "text-embedding-3-small"
-DEFAULT_GEMINI_MODEL = "gemini-pro" # Nếu bạn vẫn dùng Gemini cho một số tác vụ
-OPENROUTER_API_KEY = None # Sẽ được override bởi .env
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_OPENAI_CHAT_MODEL = "openai/gpt-4o-mini" # Ví dụ: thay đổi model name cho OpenRouter
+DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE = "openai/gpt-4o-mini" # Ví dụ: thay đổi model name cho OpenRouter
+DEFAULT_OPENAI_EMBEDDINGS_MODEL = "openai/text-embedding-3-small" # Ví dụ: thay đổi model name cho OpenRouter
+FEATURED_IMAGE_MODEL = "openai/dall-e-3" # Ví dụ: thay đổi model name cho OpenRouter
+DEFAULT_GEMINI_MODEL = "google/gemini-pro" # Nếu bạn vẫn dùng Gemini cho một số tác vụ (ví dụ qua OpenRouter)
 
 # --- Cấu hình cho tìm kiếm ---
 GOOGLE_CX_ID = "YOUR_SINGLE_CX_ID_FROM_ENV" # Sẽ được load từ .env

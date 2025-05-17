@@ -121,10 +121,10 @@ def process_single_section_video(section_data, article_title, parent_chapter_nam
     video_keyword = call_openai_chat(
         [{"role": "user", "content": prompt_vid_keyword}],
         config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-        api_key=openai_api_key, # OpenAI API key gốc
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        openai_api_key,
+        # Thêm các tham số mới cho OpenRouter
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT')
     )
     if not video_keyword:
         logger.error(f"Failed to generate video keyword for section: {section_data.get('sectionName')}")
@@ -179,11 +179,10 @@ def process_single_section_video(section_data, article_title, parent_chapter_nam
     chosen_video_info = call_openai_chat(
         [{"role": "user", "content": prompt_choose_video}],
         config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-        api_key=openai_api_key, # OpenAI API key gốc
-        is_json_output=True, # Yêu cầu OpenAI trả về JSON
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        openai_api_key,
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT'),
+        is_json_output=True # Yêu cầu OpenAI trả về JSON
     )
 
     if chosen_video_info and chosen_video_info.get('videoID'):

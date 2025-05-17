@@ -3,7 +3,6 @@ import requests
 import time
 import json
 import logging
-from openai import OpenAI # Thư viện OpenAI chính thức
 from googleapiclient.discovery import build # Thư viện Google API
 # Giả sử APP_CONFIG được load từ một module config_loader
 # from utils.config_loader import APP_CONFIG
@@ -14,61 +13,44 @@ logger = logging.getLogger(__name__)
 
 # --- OpenAI Client Functions ---
 
-# Nên khởi tạo OpenAI client một lần và tái sử dụng nếu có thể
-# Tuy nhiên, để đơn giản, chúng ta có thể khởi tạo trong hàm hoặc truyền vào
-# openai_client = OpenAI(api_key=APP_CONFIG.get('OPENAI_API_KEY'))
-
-def get_openai_client(api_key):
-    """Helper function to get an OpenAI client instance."""
-    if not api_key:
-        logger.error("OpenAI API key is not configured.")
-        raise ValueError("OpenAI API key is missing.")
-    return OpenAI(api_key=api_key)
-
-def call_openai_chat(prompt_messages, 
-                     model_name, 
-                     api_key, # Đây là OpenAI API key gốc, dùng khi target_api="openai"
-                     is_json_output=False, 
-                     max_retries=3, 
-                     retry_delay=5,
-                     target_api="openai", # "openai" hoặc "openrouter"
-                     openrouter_api_key=None,
-                     openrouter_base_url=None):
+def call_openai_chat(prompt_messages, model_name, api_key, openrouter_base_url, user_agent, is_json_output=False, max_retries=3, retry_delay=5):
     """
-    Gửi request đến API chat của OpenAI hoặc OpenRouter.
+    Gửi request đến API chat của OpenAI.
     prompt_messages: list of message objects, e.g., [{"role": "user", "content": "Hello"}]
     is_json_output: Nếu True, yêu cầu OpenAI trả về JSON và cố gắng parse.
-    target_api: "openai" để gọi trực tiếp OpenAI, "openrouter" để gọi qua OpenRouter.
-    openrouter_api_key: API key cho OpenRouter (chỉ dùng khi target_api="openrouter").
-    openrouter_base_url: Base URL cho OpenRouter (chỉ dùng khi target_api="openrouter").
     """
     attempt = 0
-    client = None
-
-    if target_api == "openrouter":
-        client = OpenAI(api_key=openrouter_api_key, base_url=openrouter_base_url)
-    else: # Mặc định hoặc target_api == "openai"
-        client = get_openai_client(api_key) # Sử dụng OpenAI API key gốc
+    endpoint_url = f"{openrouter_base_url}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": user_agent
+        # "HTTP-Referer": "YOUR_SITE_URL", # Tùy chọn: Thêm URL website của bạn
+        # "X-Title": "YOUR_APP_NAME" # Tùy chọn: Thêm tên ứng dụng của bạn
+    }
+    payload = {
+        "model": model_name,
+        "messages": prompt_messages
+    }
+    if is_json_output:
+        payload["response_format"] = {"type": "json_object"}
 
     while attempt < max_retries:
         try:
-            logger.info(f"Calling OpenAI Chat API. Model: {model_name}. JSON output: {is_json_output}. Attempt: {attempt + 1}")
+            logger.info(f"Calling OpenRouter Chat API. Model: {model_name}. JSON output: {is_json_output}. Attempt: {attempt + 1}")
             # logger.debug(f"Prompt messages: {prompt_messages}") # Có thể quá dài để log
 
-            if is_json_output:
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=prompt_messages,
-                    response_format={"type": "json_object"}
-                )
-            else:
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=prompt_messages
-                )
+            response = requests.post(endpoint_url, headers=headers, json=payload, timeout=180) # Tăng timeout nếu cần
+            response.raise_for_status()
+            
+            response_data = response.json()
+            content = response_data.get("choices", [{}])[0].get("message", {}).get("content")
+            
+            if content is None:
+                logger.error(f"OpenRouter Chat API call did not return content. Response: {response_data}")
+                raise Exception("No content in OpenRouter response")
 
-            content = response.choices[0].message.content
-            logger.info("OpenAI Chat API call successful.")
+            logger.info("OpenRouter Chat API call successful.")
 
             if is_json_output:
                 try:
@@ -87,35 +69,52 @@ def call_openai_chat(prompt_messages,
                 return content # Trả về string nếu không yêu cầu JSON
 
         except Exception as e:
-            logger.error(f"Error calling OpenAI Chat API (attempt {attempt + 1}/{max_retries}): {e}")
+            logger.error(f"Error calling OpenRouter Chat API (attempt {attempt + 1}/{max_retries}): {e}")
             attempt += 1
             if attempt >= max_retries:
-                logger.error("Max retries reached for OpenAI Chat API call. Raising exception.")
+                logger.error("Max retries reached for OpenRouter Chat API call. Raising exception.")
                 # raise # Hoặc trả về một giá trị lỗi cụ thể
                 return None # Hoặc một dict lỗi
             logger.info(f"Retrying in {retry_delay} seconds...")
             time.sleep(retry_delay)
     return None # Nếu tất cả các lần thử đều thất bại
 
-def call_openai_dalle(prompt, size, api_key, model="dall-e-3", n=1, max_retries=3, retry_delay=5):
-    """Tạo ảnh với DALL-E."""
-    client = get_openai_client(api_key)
+def call_openai_dalle(prompt, size, api_key, openrouter_base_url, user_agent, model="openai/dall-e-3", n=1, max_retries=3, retry_delay=5):
+    """Tạo ảnh với DALL-E (thông qua OpenRouter)."""
     attempt = 0
+    endpoint_url = f"{openrouter_base_url}/images/generations"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": user_agent
+    }
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "n": n,
+        "size": size,
+        "response_format": "url" # OpenRouter thường trả về URL
+    }
+
     while attempt < max_retries:
         try:
-            logger.info(f"Calling OpenAI DALL-E API. Model: {model}. Prompt: '{prompt[:50]}...'. Attempt: {attempt + 1}")
-            response = client.images.generate(
-                model=model,
-                prompt=prompt,
-                size=size,
-                n=n,
-                response_format="url" # Hoặc "b64_json" nếu muốn lấy base64
-            )
-            image_url = response.data[0].url # Giả sử n=1
-            logger.info(f"OpenAI DALL-E API call successful. Image URL: {image_url}")
+            logger.info(f"Calling OpenRouter DALL-E API. Model: {model}. Prompt: '{prompt[:50]}...'. Attempt: {attempt + 1}")
+            response = requests.post(endpoint_url, headers=headers, json=payload, timeout=120)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            # OpenRouter có thể trả về response hơi khác OpenAI một chút
+            # Kiểm tra cấu trúc response của OpenRouter cho image generation
+            image_url = response_data.get("data", [{}])[0].get("url")
+            
+            if not image_url:
+                logger.error(f"OpenRouter DALL-E API call did not return image URL. Response: {response_data}")
+                raise Exception("No image URL in OpenRouter DALL-E response")
+
+            logger.info(f"OpenRouter DALL-E API call successful. Image URL: {image_url}")
             return image_url
         except Exception as e:
-            logger.error(f"Error calling OpenAI DALL-E API (attempt {attempt + 1}/{max_retries}): {e}")
+            logger.error(f"Error calling OpenRouter DALL-E API (attempt {attempt + 1}/{max_retries}): {e}")
             attempt += 1
             if attempt >= max_retries:
                 logger.error("Max retries reached for DALL-E API call.")
@@ -124,22 +123,38 @@ def call_openai_dalle(prompt, size, api_key, model="dall-e-3", n=1, max_retries=
             time.sleep(retry_delay)
     return None
 
-def call_openai_embeddings(text_input, model_name, api_key, max_retries=3, retry_delay=5):
-    """Lấy embeddings từ OpenAI."""
-    client = get_openai_client(api_key)
+def call_openai_embeddings(text_input, model_name, api_key, openrouter_base_url, user_agent, max_retries=3, retry_delay=5):
+    """Lấy embeddings từ OpenAI (thông qua OpenRouter)."""
     attempt = 0
+    endpoint_url = f"{openrouter_base_url}/embeddings"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": user_agent
+    }
+    payload = {
+        "model": model_name,
+        "input": text_input
+    }
+
     while attempt < max_retries:
         try:
-            logger.info(f"Calling OpenAI Embeddings API. Model: {model_name}. Input text length: {len(text_input)}. Attempt: {attempt + 1}")
-            response = client.embeddings.create(
-                input=text_input,
-                model=model_name
-            )
-            embedding = response.data[0].embedding
-            logger.info("OpenAI Embeddings API call successful.")
+            logger.info(f"Calling OpenRouter Embeddings API. Model: {model_name}. Input text length: {len(text_input)}. Attempt: {attempt + 1}")
+            response = requests.post(endpoint_url, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+
+            response_data = response.json()
+            # Kiểm tra cấu trúc response của OpenRouter cho embeddings
+            embedding = response_data.get("data", [{}])[0].get("embedding")
+
+            if embedding is None:
+                logger.error(f"OpenRouter Embeddings API call did not return embedding. Response: {response_data}")
+                raise Exception("No embedding in OpenRouter response")
+
+            logger.info("OpenRouter Embeddings API call successful.")
             return embedding
         except Exception as e:
-            logger.error(f"Error calling OpenAI Embeddings API (attempt {attempt + 1}/{max_retries}): {e}")
+            logger.error(f"Error calling OpenRouter Embeddings API (attempt {attempt + 1}/{max_retries}): {e}")
             attempt += 1
             if attempt >= max_retries:
                 logger.error("Max retries reached for Embeddings API call.")

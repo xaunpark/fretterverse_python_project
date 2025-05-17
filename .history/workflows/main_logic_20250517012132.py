@@ -78,11 +78,10 @@ def choose_author_for_topic(topic_or_keyword, author_personas_list_from_config, 
         chosen_author_data = call_openai_chat(
             prompt_messages=[{"role": "user", "content": prompt_text}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True,
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True
         )
         
         if chosen_author_data and isinstance(chosen_author_data, dict) and \
@@ -147,11 +146,10 @@ def analyze_serp_and_keyword(keyword, serp_data_string, config):
         analysis_result = call_openai_chat(
             prompt_messages=[{"role": "user", "content": prompt}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True,
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True
         )
         if analysis_result and isinstance(analysis_result, dict) and \
            all(k in analysis_result for k in ['searchIntent', 'contentFormat', 'articleType', 'selectedModel', 'semanticKeyword']):
@@ -172,11 +170,10 @@ def check_keyword_suitability(keyword, config, gsheet_handler):
         suitability_response = call_openai_chat(
             prompt_messages=[{"role": "user", "content": prompt}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True, # Prompt yêu cầu JSON với key "suitable"
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True # Prompt yêu cầu JSON với key "suitable"
         )
         if suitability_response and isinstance(suitability_response, dict) and \
            suitability_response.get('suitable', '').lower() == 'yes':
@@ -246,7 +243,9 @@ def check_keyword_uniqueness_and_upsert(keyword: str,
     embedding_vector = call_openai_embeddings(
         text_input=keyword,
         model_name=config.get('DEFAULT_OPENAI_EMBEDDINGS_MODEL'),
-        api_key=config.get('OPENAI_API_KEY')
+        api_key=config.get('OPENAI_API_KEY'),
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT')
     )
     if not embedding_vector:
         logger.error(f"Failed to generate embedding for '{keyword}'.")
@@ -474,11 +473,10 @@ def generate_initial_outline(keyword_to_process, preparation_data, config):
         initial_outline_json = call_openai_chat(
             prompt_messages=[{"role": "user", "content": formatted_prompt}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE', config.get('DEFAULT_OPENAI_CHAT_MODEL')), # Có thể dùng model mạnh hơn cho outline
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True, # Prompt yêu cầu JSON
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True # Prompt yêu cầu JSON
         )
 
         if initial_outline_json and isinstance(initial_outline_json, dict) and \
@@ -527,11 +525,10 @@ def enrich_outline_with_author_hooks(keyword_to_process, initial_outline_dict, c
         enriched_outline_json = call_openai_chat(
             prompt_messages=[{"role": "user", "content": prompt}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE', config.get('DEFAULT_OPENAI_CHAT_MODEL')),
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True, # Prompt yêu cầu JSON
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True # Prompt yêu cầu JSON
         )
 
         if enriched_outline_json and isinstance(enriched_outline_json, dict) and \
@@ -876,11 +873,10 @@ def write_content_for_all_sections_step(processed_sections_list, article_meta, p
             llm_response = call_openai_chat(
                 prompt_messages=[{"role": "user", "content": prompt_for_llm}],
                 model_name=content_model,
-                api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-                is_json_output=False, # Nội dung là HTML string, không phải JSON
-                target_api="openrouter",
-                openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-                openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+                api_key=config.get('OPENAI_API_KEY'),
+                openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+                user_agent=config.get('USER_AGENT'),
+                is_json_output=False # Nội dung là HTML string, không phải JSON
             )
             if llm_response:
                 # Kiểm tra nếu LLM trả về "I love you" (dù không nên nếu prompt khác)
@@ -1090,11 +1086,10 @@ def _generate_comparison_table_if_needed(article_meta, processed_sections_list, 
         comparison_table_html = call_openai_chat(
             prompt_messages=[{"role": "user", "content": prompt}],
             model_name=table_model,
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=False, # Mong đợi HTML string
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=False # Mong đợi HTML string
         )
         if comparison_table_html and "<table>" in comparison_table_html:
             logger.info("Successfully generated HTML comparison table.")
@@ -1287,11 +1282,10 @@ def _determine_category_id(article_meta, keyword_analysis_data, preparation_data
     category_recommendation = call_openai_chat(
         prompt_messages=[{"role": "user", "content": prompt}],
         model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-        api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-        is_json_output=True,
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        api_key=config.get('OPENAI_API_KEY'),
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT'),
+        is_json_output=True
     )
 
     if not category_recommendation or not isinstance(category_recommendation, dict):
@@ -1384,10 +1378,9 @@ def finalize_and_publish_article_step(
     dalle_prompt_description = call_openai_chat(
         prompt_messages=[{"role": "user", "content": dalle_prompt_content}],
         model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-        api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-        target_api="openrouter",
-        openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-        openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+        api_key=config.get('OPENAI_API_KEY'),
+        openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+        user_agent=config.get('USER_AGENT')
     )
 
     featured_image_wp_id = None
@@ -1400,6 +1393,8 @@ def finalize_and_publish_article_step(
                 prompt=dalle_prompt_description,
                 size=config.get('FEATURED_IMAGE_SIZE', "1792x1024"),
                 api_key=config.get('OPENAI_API_KEY'),
+                openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+                user_agent=config.get('USER_AGENT'),
                 model=config.get('FEATURED_IMAGE_MODEL', "dall-e-3")
             )
             if featured_image_url_from_dalle:
@@ -1526,11 +1521,10 @@ def finalize_and_publish_article_step(
         ilj_keywords_response_raw = call_openai_chat( # Đổi tên biến
             prompt_messages=[{"role": "user", "content": prompt_ilj_keywords}],
             model_name=config.get('DEFAULT_OPENAI_CHAT_MODEL'),
-            api_key=config.get('OPENAI_API_KEY'), # OpenAI API key gốc
-            is_json_output=True,
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            api_key=config.get('OPENAI_API_KEY'),
+            openrouter_base_url=config.get('OPENROUTER_API_BASE_URL'),
+            user_agent=config.get('USER_AGENT'),
+            is_json_output=True 
         )
 
         actual_ilj_keywords_list = None
