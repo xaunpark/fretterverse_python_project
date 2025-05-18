@@ -3,7 +3,7 @@
 # --- Cấu hình chung cho ứng dụng ---
 APP_NAME = "FretterVerse Python Project"
 DEBUG_MODE = True  # Chuyển thành False khi deploy
-MAX_KEYWORDS_PER_RUN = 20  # Giới hạn số lần thử xử lý các keyword bị lỗi (nếu không có trong site_config)
+MAX_KEYWORDS_PER_RUN = 3  # Giới hạn số lần thử xử lý các keyword bị lỗi (nếu không có trong site_config)
 DELAY_BETWEEN_KEYWORDS_SEC = 5 # Thời gian nghỉ (giây) giữa các keyword
 
 # --- Cấu hình cho WordPress ---

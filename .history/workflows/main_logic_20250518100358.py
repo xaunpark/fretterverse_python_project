@@ -780,14 +780,13 @@ def _generate_prompt_for_section_content(section_data, article_meta, chosen_auth
         return prompt_template.format(
             length=s_length,
             article_title=article_title,
+            # model_role và selected_model không có trong WRITE_CONCLUSION_PROMPT
             prompt_section_hook=prompt_section_hook_instruction,
             semantic_keywords=s_semantic_keywords_str,
             author_name=author_name,
             author_info=s_author_info, # authorInfo cụ thể cho section Conclusion
-            section_names_list=all_section_names_list_str,
-            model_role=s_model_role, # ADDED: Provide model_role
-            selected_model=selected_model  # ADDED: Provide selected_model
-        )
+            section_names_list=all_section_names_list_str
+        )        
     elif s_name_tag == "faqs":
         prompt_template = content_prompts.WRITE_FAQ_SECTION_PROMPT
         # FAQ prompt chỉ cần article_title
