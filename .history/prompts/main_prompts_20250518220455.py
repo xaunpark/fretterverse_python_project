@@ -22,13 +22,13 @@ the most suitable content format, the appropriate article type, the writing mode
 Please provide the analysis in JSON format with keys: 'searchIntent', 'contentFormat', 'articleType', 'selectedModel', 'semanticKeyword' where each key's value is limited to the specified choices without further elaboration."
 
 Output Structure:
-{{
+{
   "searchIntent": "[Your analysis on the likely search intent]",
   "contentFormat": "[Selected content format from the given options]",
   "articleType": "[Selected article type from the given options]",
   "selectedModel": "[Selected writing model from the given options]"
   "semanticKeyword": [list of semantic keywords] 
-}}
+}
 """
 
 # ==============================================================================
@@ -239,13 +239,13 @@ Consideration: "Evaluate whether the keyword fits more specifically within a sub
 
 Provide Your Recommendation:
 Output as JSON with the following structure:
-{{
-  "recommendation": {{
+{
+  "recommendation": {
     "category": "The most relevant and specific Sub-Category name. If there is no matching option, let it be null"
-  }},
+  },
   "isNew": "yes/no - Indicate if this is a new category/sub-category suggestion. Only 'yes' when the appropriate category/sub-category cannot be found from the list.",
   "suggestedName": "Name of the proposed new category/sub-category, if applicable"
-}}
+}
 
 Note: Emphasize precision and the need for direct categorization. The goal is to place each keyword in the most specific and relevant spot, enhancing the overall navigability of the database. Ensure that the category names are used exactly as they appear in the list, maintaining accuracy in spelling and formatting.
 """

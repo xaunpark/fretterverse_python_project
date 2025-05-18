@@ -91,8 +91,8 @@ def choose_author_for_topic(topic_or_keyword, author_personas_list_from_config, 
     # Sử dụng đúng tên key khi gọi .format()
     # Key trong .format() phải khớp với placeholder trong main_prompts.CHOOSE_AUTHOR_PROMPT
     prompt_text = main_prompts.CHOOSE_AUTHOR_PROMPT.format(
-        topic_title=topic_or_keyword, # This matches {topic_title} in the prompt
-        authors_list_json_string=authors_list_json_string_for_format # This matches {authors_list_json_string}
+        topic_title=topic_or_keyword,
+        authors_list_json_string=authors_list_json_string_for_format # Đảm bảo placeholder là {authors_list_json_string}
     )
     
     try:

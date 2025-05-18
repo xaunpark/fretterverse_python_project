@@ -91,8 +91,8 @@ def choose_author_for_topic(topic_or_keyword, author_personas_list_from_config, 
     # Sử dụng đúng tên key khi gọi .format()
     # Key trong .format() phải khớp với placeholder trong main_prompts.CHOOSE_AUTHOR_PROMPT
     prompt_text = main_prompts.CHOOSE_AUTHOR_PROMPT.format(
-        topic_title=topic_or_keyword, # This matches {topic_title} in the prompt
-        authors_list_json_string=authors_list_json_string_for_format # This matches {authors_list_json_string}
+        topic_title=topic_or_keyword,
+        authors_list_json_string=authors_list_json_string_for_format # Đảm bảo placeholder là {authors_list_json_string}
     )
     
     try:
@@ -191,7 +191,11 @@ def check_keyword_suitability(keyword, config, gsheet_handler):
     logger.info(f"Checking suitability for keyword: '{keyword}'")
     
     # Lấy toàn bộ template prompt từ config
-    suitability_prompt_template_from_config = config.get('SITE_SPECIFIC_PROMPT_VALUES', {}).get('CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT', "Is the keyword '{keyword}' suitable? Respond in JSON format with 'yes' or 'no'.")
+    site_prompt_values = config.get('SITE_SPECIFIC_PROMPT_VALUES', {})
+    suitability_prompt_template_from_config = site_prompt_values.get(
+        'CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT', 
+        "Is the keyword '{keyword}' suitable? Respond in JSON format with 'yes' or 'no'." # Fallback rất cơ bản
+    )
 
     prompt = suitability_prompt_template_from_config.format(keyword=keyword)
     try:

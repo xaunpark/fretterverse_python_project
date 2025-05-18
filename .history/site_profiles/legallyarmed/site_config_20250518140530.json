@@ -1,0 +1,73 @@
+{
+    "SITE_NAME": "LegallyArmed",
+    "WP_BASE_URL": "https://legallyarmed.com",
+    "DEFAULT_POST_STATUS": "draft",
+    "DEFAULT_AUTHOR_ID": 6,
+    "DEFAULT_CATEGORY_ID": 16,
+    "IMAGE_RESIZE_WIDTH": 700,
+    "IMAGE_RESIZE_HEIGHT": 700,
+    "FEATURED_IMAGE_RESIZE_WIDTH": 800,
+    "USER_AGENT": "LegallyArmedPythonBot/1.0 (+http://legallyarmed.com/bot-info)",
+    "WP_TABLE_PREFIX": "wp_",
+  
+    "GSHEET_SPREADSHEET_ID": "16mEq-St5KW8qJGumTgxC9J4kyqh9joPEEgD-THgFN3M",
+    "GSHEET_KEYWORD_SHEET_NAME": "Keyword",
+    "GSHEET_KEYWORD_SHEET_NAME_USED_0": "Keyword Used = 0",
+    "GSHEET_KEYWORD_COLUMN": "Keyword",
+    "GSHEET_USED_COLUMN": "Used",
+    "GSHEET_UNIQUE_COLUMN": "Uniqe",
+    "GSHEET_SUITABLE_COLUMN": "Suitable",
+    "GSHEET_POST_TITLE_COLUMN": "Post Title",
+    "GSHEET_POST_ID_COLUMN": "Post ID",
+    "GSHEET_POST_URL_COLUMN": "Post URL",
+    "GSHEET_STATUS_COLUMN": "Status",
+  
+    "PINECONE_INDEX_NAME": "fretterverse",
+    "PINECONE_EMBEDDING_DIMENSION": 256,
+    "PINECONE_SIMILARITY_THRESHOLD": 0.8,
+    "PINECONE_AUTOCREATE_INDEX": false,
+    "PINECONE_METRIC": "cosine",
+    "PINECONE_CLOUD_PROVIDER": "aws",
+    "PINECONE_REGION": "us-west-2",
+  
+    "AUTHOR_PERSONAS": [
+      { "name": "Robert Williams", "info": "Teja Gerken, born in Germany in 1970...", "ID": "9" },
+      { "name": "Michael Brown", "info": "Adam Perlmutter, a distinguished figure...", "ID": "10" },
+      { "name": "David Garcia", "info": "Teja Gerken, born in Germany in 1970...", "ID": "11" },
+      { "name": "Richard Miller", "info": "Adam Perlmutter, a distinguished figure...", "ID": "12" },
+      { "name": "Charles Davis", "info": "Teja Gerken, born in Germany in 1970...", "ID": "13" }
+    ],
+  
+    "IMAGE_PROCESSOR_CONFIG": {
+      "MAX_SELECTION_ATTEMPTS": 3,
+      "DOWNLOAD_TIMEOUT": 10,
+      "RETRY_DELAY": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "GOOGLE_IMAGE_SIZE_FILTER": "large",
+      "GOOGLE_SEARCH_NUM_RESULTS_IMAGES": 10,
+      "RESIZE_QUALITY": 85
+    },
+    "VIDEO_PROCESSOR_CONFIG": {
+      "INSERTION_PROBABILITY": 0.3,
+      "SEARCH_COUNT": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "SKIP_SECTION_NAMES_CONTAINING": ["top rated"],
+      "SKIP_SECTION_INDEXES": [2]
+    },
+    "EXTERNAL_LINKS_PROCESSOR_CONFIG": {
+      "MIN_LINKS_PER_SECTION": 1,
+      "MAX_LINKS_PER_SECTION": 2,
+      "NUM_SEARCH_RESULTS": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "SKIP_SECTION_NAMES_CONTAINING": ["top rated"],
+      "SKIP_SECTION_INDEXES": [2]
+    },
+    "FEATURED_IMAGE_CONFIG": {
+      "ENABLED": false,
+      "MODEL": "dall-e-3",
+      "SIZE": "1792x1024"
+    }
+  }  

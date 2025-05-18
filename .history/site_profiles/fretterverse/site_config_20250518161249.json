@@ -30,8 +30,9 @@
     "PINECONE_CLOUD_PROVIDER": "aws",
     "PINECONE_REGION": "us-west-2",
     "SITE_SPECIFIC_PROMPT_VALUES": {
+      "SITE_DESCRIPTION_FOR_SUITABILITY": "a website about music and musical instruments",
       "CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT": "Given that I have a website about music and musical instruments and need to write blog posts, evaluate whether the keyword '{keyword}' is suitable for the blog post.\nA keyword is suitable ('yes') if it meets the following criteria:\n\nRelates to general music knowledge, technical guidance, or musical instruments.\nExcludes overly specific keywords about tabs, chords, charts, or individual song titles.\nAvoids biographical trivia, personal gossip, or pop culture unless directly tied to music, instruments, or their impact.\nAvoids keywords about artist deaths, health, or unrelated locations unless relevant to their musical legacy.\nRespond in JSON format with 'yes' or 'no'."
-    },
+    }
     "AUTHOR_PERSONAS": [
       {
         "name": "Charles Davis",
