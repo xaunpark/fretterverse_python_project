@@ -34,17 +34,17 @@
       {
         "name": "Charles Davis",
         "info": "Guitar education expert, renowned for making guitar learning accessible, engaging, and effective for all levels. Focuses on simplifying complex techniques and music theory into understandable lessons, covering topics from fundamentals, fretboard techniques, styles (blues, rock) to modern harmony.",
-        "ID": "13"
+        "ID": "9"
       },
       {
         "name": "David Garcia",
         "info": "Leading expert in the science and technology of stringed instruments. Focuses on acoustics, materials science, and engineering principles to optimize instrument sound, function, and durability. Provides knowledge for luthiers, manufacturers, and musicians on instrument design, restoration, and scientific analysis.",
-        "ID": "11"
+        "ID": "10"
       },
       {
         "name": "Michael Brown",
         "info": "Respected authority on guitar gear and technology. Deep knowledge of amplifiers (tube, digital modelers), effects pedals, and their application in achieving desired sounds. Offers reviews, analysis, and practical advice on selecting and optimizing guitar equipment.",
-        "ID": "10"
+        "ID": "11"
       },
       {
         "name": "Richard Miller",
@@ -54,7 +54,7 @@
       {
         "name": "Robert Williams",
         "info": "Expert in guitar harmony, known as the 'Architect of Auditory Art'. Focuses on analyzing and teaching complex harmonic structures (chords, voicings, chord melody, counterpoint) across jazz, classical, and contemporary styles, enabling players to express music more profoundly.",
-        "ID": "9"
+        "ID": "13"
       }
     ],
   

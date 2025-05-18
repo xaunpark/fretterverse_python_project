@@ -155,9 +155,15 @@ Here's the initial article outline:
 And here's the information about {author_name} - the author:
 "{author_bio}"
 
-For each chapter and sub-chapter of the provided outline, develop an 'authorInfo' snippet that reflects a specific aspect of {author_name}'s expertise or experience relevant to the chapter's focus. Ensure that the 'authorInfo' adds a personal touch and professional insights to each section, enhancing the overall guide with {author_name}'s unique perspective.
+For each chapter and sub-chapter of the provided outline, develop an 'authorInfo' snippet 
+that reflects a specific aspect of {author_name}'s expertise or experience relevant 
+to the chapter's focus. Ensure that the 'authorInfo' adds a personal touch and 
+professional insights to each section, enhancing the overall guide with 
+{author_name}'s unique perspective.
 
-Additionally, please update the outline by adding a 'sectionHook' key to each chapter and every sub-chapter within. Consider the following types suitable for the content and purpose of the chapter and every sub-chapter within:
+Additionally, please update the outline by adding a 'sectionHook' key to each chapter 
+and every sub-chapter within. Consider the following types suitable for the content 
+and purpose of the chapter and every sub-chapter within:
 
 1. Intriguing Questions: Pose a question that reflects a key theme or dilemma in the chapter, provoking thought and interest.
 2. Fascinating Facts: Use an interesting fact or statistic that sets the stage for the chapter's content.
@@ -169,12 +175,13 @@ Ensure that each 'sectionHook' is:
 - Engaging and varied in style to maintain reader interest.
 - Providing enough context so readers are intrigued and motivated to read on.
 
-**IMPORTANT:**
+IMPORTANT:
 - The output should be strictly in valid JSON format.
 - Remove any trailing commas or formatting errors.
 - Do not include comments or unrelated content in the JSON.
-- Ensure the integrity of the original outline is maintained.
+- Ensure the integrity of the original outline is maintained by including ALL original keys and values from the initial outline, and only adding 'authorInfo' and 'sectionHook' to each chapter and subchapter object.
 - Validate that each generated JSON object adheres to the JSON standard before returning the response.
+The final output must be a single JSON object representing the complete, enriched outline.
 """
 
 # ==============================================================================
