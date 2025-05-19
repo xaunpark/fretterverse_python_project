@@ -1,7 +1,7 @@
 {
-    "SCHEDULE_ENABLED": false,
-    "SCHEDULE_INTERVAL_HOURS": 0,
-    "SCHEDULE_INTERVAL_MINUTES": 1,
+    "SCHEDULE_ENABLED": true,
+    "SCHEDULE_INTERVAL_HOURS": 24,
+    "SCHEDULE_INTERVAL_MINUTES": 0,
 
     "SITE_NAME": "Fretterverse",
     "WP_BASE_URL": "https://fretterverse.com",

@@ -1,7 +1,7 @@
 {
     "SCHEDULE_ENABLED": true,
     "SCHEDULE_INTERVAL_HOURS": 0,
-    "SCHEDULE_INTERVAL_MINUTES": 1,
+    "SCHEDULE_INTERVAL_MINUTES": 30,
 
     "SITE_NAME": "LegallyArmed",
     "WP_BASE_URL": "https://legallyarmed.com",

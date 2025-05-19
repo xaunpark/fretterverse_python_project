@@ -1,11 +1,12 @@
 # main_orchestrator.py
-import sys # Thêm sys để sử dụng sys.exit()
-print(f"MAIN_ORCHESTRATOR: Script execution started.", file=sys.stdout, flush=True)
 import logging
 print(f"MAIN_ORCHESTRATOR: Imported logging.", file=sys.stdout, flush=True)
 import time
 import json 
 import argparse
+import sys # Thêm sys để sử dụng sys.exit()
+print(f"MAIN_ORCHESTRATOR: Script execution started.", file=sys.stdout, flush=True)
+
 import re 
 
 from utils.config_loader import load_app_config
