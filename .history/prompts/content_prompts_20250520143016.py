@@ -209,6 +209,11 @@ The article's main topic is: "{article_topic}"
 The desired tone is: "{desired_tone}"
 The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
 
+Here is the draft HTML content of the article:
+--------------------------------------------------
+{draft_html_content}
+--------------------------------------------------
+
 Please perform the following actions on the draft:
 
 1.  **Enhance and Deepen Content:**
@@ -232,9 +237,4 @@ Please perform the following actions on the draft:
     *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
 
 Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
-
-Here is the draft HTML content of the article:
---------------------------------------------------
-{draft_html_content}
---------------------------------------------------
 """

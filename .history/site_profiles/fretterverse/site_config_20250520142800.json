@@ -12,7 +12,6 @@
     "IMAGE_RESIZE_HEIGHT": 700,
     "FEATURED_IMAGE_RESIZE_WIDTH": 800,
     "USER_AGENT": "FretterVersePythonBot/1.0 (+http://fretterverse.com/bot-info)",
-    "MYSQL_DATABASE": "wordpress",    
     "WP_TABLE_PREFIX": "wp_fae40_",
 
     "PAST_DATE_PUBLISHING_ENABLED": true,

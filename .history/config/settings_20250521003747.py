@@ -40,8 +40,8 @@ YOUTUBE_SEARCH_NUM_RESULTS = 5
 
 # --- Cấu hình logic nghiệp vụ ---
 VIDEO_INSERTION_PROBABILITY = 0.3 # Xác suất chèn video (0.0 đến 1.0)
-EXTERNAL_LINKS_PER_SECTION_MIN = 0
-EXTERNAL_LINKS_PER_SECTION_MAX = 3
+EXTERNAL_LINKS_PER_SECTION_MIN = 2
+EXTERNAL_LINKS_PER_SECTION_MAX = 4
 PINECONE_SIMILARITY_THRESHOLD = 0.8 # Ngưỡng để coi keyword là không unique
 
 # --- Cấu hình Google Sheets ---

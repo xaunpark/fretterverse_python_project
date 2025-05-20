@@ -19,9 +19,9 @@ WP_TABLE_PREFIX_FALLBACK = "wp_"
 USER_AGENT_FALLBACK = "GenericPythonBot/1.0"
 
 # --- Cấu hình cho OpenAI & LLMs ---
-DEFAULT_OPENAI_CHAT_MODEL = "openai/gpt-4o-mini" # Model mặc định cho OpenRouter
+DEFAULT_OPENAI_CHAT_MODEL = "openai/gpt-4o-mini" # Model mặc định cho OpenRouter (ví dụ)
 DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE = "openai/gpt-4.1" # Model cho outline qua OpenRouter
-DEFAULT_OPENAI_CHAT_MODEL_FOR_CONTENT = "openai/gpt-4.1" # Model cho viết content qua OpenRouter
+DEFAULT_OPENAI_CHAT_MODEL_FOR_CONTENT = "openai/gpt-4.1" # Model cho viết content qua OpenRouter (có thể khác)
 DEFAULT_OPENAI_CHAT_MODEL_FOR_FINALIZING = "openai/gpt-4.1" # Model cho hoàn thiện nội dung
 DEFAULT_OPENAI_EMBEDDINGS_MODEL = "text-embedding-3-small"
 DEFAULT_GEMINI_MODEL = "gemini-pro" # Nếu bạn vẫn dùng Gemini cho một số tác vụ
@@ -40,8 +40,8 @@ YOUTUBE_SEARCH_NUM_RESULTS = 5
 
 # --- Cấu hình logic nghiệp vụ ---
 VIDEO_INSERTION_PROBABILITY = 0.3 # Xác suất chèn video (0.0 đến 1.0)
-EXTERNAL_LINKS_PER_SECTION_MIN = 0
-EXTERNAL_LINKS_PER_SECTION_MAX = 3
+EXTERNAL_LINKS_PER_SECTION_MIN = 2
+EXTERNAL_LINKS_PER_SECTION_MAX = 4
 PINECONE_SIMILARITY_THRESHOLD = 0.8 # Ngưỡng để coi keyword là không unique
 
 # --- Cấu hình Google Sheets ---
@@ -65,3 +65,35 @@ LOG_FILE_PATH = "app.log" # Đường dẫn file log
 
 # --- Các hằng số khác ---
 USER_AGENT = "FretterVersePythonBot/1.0 (+http://yourwebsite.com/bot-info)" # User agent cho HTTP requests
+
+# --- Cấu hình Author Personas (có thể chuyển vào file JSON riêng nếu quá dài) ---
+# Tuy nhiên, trong n8n bạn đã hardcode vào prompt, nên ở đây cũng có thể làm tương tự
+# hoặc load từ một file JSON/YAML nếu muốn linh hoạt hơn.
+
+AUTHOR_PERSONAS = [
+    {
+      "name": "Robert Williams",
+      "info": "Teja Gerken, born in Germany in 1970...",
+      "ID": "9"
+    },
+    {
+      "name": "Michael Brown",
+      "info": "Adam Perlmutter, a distinguished figure...",
+      "ID": "10"
+    },
+    {
+      "name": "David Garcia",
+      "info": "Teja Gerken, born in Germany in 1970...",
+      "ID": "11"
+    },
+    {
+      "name": "Richard Miller",
+      "info": "Adam Perlmutter, a distinguished figure...",
+      "ID": "12"
+    },    
+    {
+      "name": "Charles Davis",
+      "info": "Teja Gerken, born in Germany in 1970...",
+      "ID": "13"
+    }  
+]

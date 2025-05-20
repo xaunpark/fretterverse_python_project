@@ -12,7 +12,6 @@
     "IMAGE_RESIZE_HEIGHT": 700,
     "FEATURED_IMAGE_RESIZE_WIDTH": 800,
     "USER_AGENT": "LegallyArmedPythonBot/1.0 (+http://legallyarmed.com/bot-info)",
-    "MYSQL_DATABASE": "wp3218202",
     "WP_TABLE_PREFIX": "wp_",
   
     "GSHEET_SPREADSHEET_ID": "1na0HkBP2lxbsulG5QqZxffgHiu-hRU_EwdgvhOvR4Zk",

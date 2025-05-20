@@ -212,7 +212,7 @@ The content provided is structured into sections, and each section was initially
 Please perform the following actions on the draft:
 
 1.  **Enhance and Deepen Content:**
-    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
+    *   Add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
     *   Replace generic claims with more specific details or elaborations.
     *   Ensure each section flows logically into the next, improving transitions if necessary.
     *   Make the content more engaging and valuable for the reader without unnecessary padding.

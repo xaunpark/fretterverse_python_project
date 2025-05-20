@@ -1775,20 +1775,17 @@ def finalize_and_publish_article_step(
             serialized_php_string = _php_serialize_internal_link_keywords(actual_ilj_keywords_list)
             logger.debug(f"Serialized PHP for ILJ: {serialized_php_string}")
 
-            table_prefix = config.get('WP_TABLE_PREFIX', 'wp_') # Lấy table prefix từ config, fallback 'wp_'
-            postmeta_table_name = f"{table_prefix}postmeta"
-
             # Xóa meta_key ilj_linkdefinition cũ (nếu có nhiều hơn 1)
             # Query này đã được điều chỉnh để chỉ xóa các bản ghi thừa, giữ lại bản ghi có meta_id lớn nhất.
             # Nếu không có bản ghi nào, nó sẽ không xóa gì.
             # Nếu chỉ có 1 bản ghi, nó cũng không xóa gì.
-            delete_duplicate_ilj_query = f"""
-            DELETE FROM {postmeta_table_name}
+            delete_duplicate_ilj_query = """
+            DELETE FROM wp_fae40_postmeta
             WHERE post_id = %s AND meta_key = 'ilj_linkdefinition'
             AND meta_id NOT IN (
                 SELECT meta_id_to_keep FROM (
                     SELECT MAX(meta_id) as meta_id_to_keep
-                    FROM {postmeta_table_name}
+                    FROM wp_fae40_postmeta
                     WHERE post_id = %s AND meta_key = 'ilj_linkdefinition'
                 ) AS temp_table
             );
@@ -1799,15 +1796,15 @@ def finalize_and_publish_article_step(
 
             # Insert hoặc Update (UPSERT)
             # Kiểm tra xem có record nào còn lại không sau khi xóa duplicate
-            check_existing_query = f"SELECT meta_id FROM {postmeta_table_name} WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' LIMIT 1"
+            check_existing_query = "SELECT meta_id FROM wp_fae40_postmeta WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' LIMIT 1"
             existing_ilj_meta = db_handler.execute_query(check_existing_query, params=(post_id,), fetch_one=True)
 
             if existing_ilj_meta: # Nếu còn record, thì UPDATE nó
-                update_ilj_query = f"UPDATE {postmeta_table_name} SET meta_value = %s WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' AND meta_id = %s"
+                update_ilj_query = "UPDATE wp_fae40_postmeta SET meta_value = %s WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' AND meta_id = %s"
                 result_ilj_db = db_handler.execute_query(update_ilj_query, params=(serialized_php_string, post_id, existing_ilj_meta['meta_id']))
                 logger.info(f"Updated existing ILJ data for post ID {post_id}. Rows affected: {result_ilj_db}")
             else: # Nếu không còn record nào, thì INSERT mới
-                insert_ilj_query = f"INSERT INTO {postmeta_table_name} (post_id, meta_key, meta_value) VALUES (%s, 'ilj_linkdefinition', %s)"
+                insert_ilj_query = "INSERT INTO wp_fae40_postmeta (post_id, meta_key, meta_value) VALUES (%s, 'ilj_linkdefinition', %s)"
                 result_ilj_db = db_handler.execute_query(insert_ilj_query, params=(post_id, serialized_php_string))
                 logger.info(f"Inserted new ILJ data for post ID {post_id}. Rows affected: {result_ilj_db}")
 

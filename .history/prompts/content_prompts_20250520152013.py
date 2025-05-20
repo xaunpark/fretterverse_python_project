@@ -204,34 +204,36 @@ SAY_I_LOVE_YOU_PROMPT = "Please respond with exactly three words expressing affe
 # PROMPT FOR REFINE AND FINALIZE ARTICLE
 # ==============================================================================
 REFINE_AND_FINALIZE_ARTICLE_PROMPT = """
-You are an expert editor tasked with refining and finalizing a draft article.
+You are an expert subject-matter editor and writer tasked with significantly enhancing, deepening, and finalizing a draft article.
 The article's main topic is: "{article_topic}"
 The desired tone is: "{desired_tone}"
-The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
+The provided HTML draft is structured into sections, each with an original intended length. Your primary goal is to elevate the content's quality, depth, and authority, while secondarily respecting the overall flow and structure. Minor, value-adding expansions to section lengths are acceptable if they contribute directly to these goals.
 
-Please perform the following actions on the draft:
+Please perform the following actions with a strong emphasis on **Point 1: Enhance and Deepen Content**:
 
-1.  **Enhance and Deepen Content:**
-    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
-    *   Replace generic claims with more specific details or elaborations.
-    *   Ensure each section flows logically into the next, improving transitions if necessary.
-    *   Make the content more engaging and valuable for the reader without unnecessary padding.
+1.  **CRITICAL - Enhance and Deepen Content (Primary Focus):**
+    *   **Integrate Specifics:** For every section, actively seek opportunities to incorporate specific, verifiable data, statistics, research-backed examples, illustrative quotes from credible (though not necessarily named) sources, or relevant case studies that substantiate claims and arguments.
+    *   **Elaborate on Claims:** Transform generic statements into detailed, insightful elaborations. Provide context, explain mechanisms, or explore implications.
+    *   **Add Nuance and Perspective:** Introduce different viewpoints or complexities related to the topic if appropriate, enriching the reader's understanding.
+    *   **Strengthen Arguments:** Ensure all arguments are well-supported and logically sound. If a claim is weak, either bolster it with evidence or suggest its removal/rephrasing.
+    *   **Increase Value:** Focus on making each section more engaging, insightful, and practically valuable for the target reader. Avoid superficial additions; any new information must add clear substance.
+    *   **Transitions:** Ensure smooth, logical transitions between ideas, paragraphs, and sections to create a cohesive narrative.
 
-2.  **Editorial Review:**
-    *   Correct any grammar, punctuation, or spelling errors.
-    *   Ensure a consistent "{desired_tone}" tone is maintained throughout the article.
-    *   Remove any repetitive phrases, redundant sentences, or unnecessary content that does not add value.
-    *   Improve sentence structure for clarity and readability. Aim for concise and impactful language where appropriate.
-    *   Check for logical flow and coherence between sections and paragraphs.
+2.  **Editorial Review (Secondary, but Important):**
+    *   Correct all grammar, punctuation, and spelling errors meticulously.
+    *   Maintain a consistent "{desired_tone}" tone throughout the entire article.
+    *   Eliminate repetitive phrases, redundant sentences, and any content that does not contribute to the depth or clarity of the article.
+    *   Refine sentence structures for optimal clarity, conciseness, and impact.
+    *   Verify logical flow and coherence across the entire article.
 
-3.  **Formatting and Output:**
-    *   The final output MUST be **clean HTML code only**, using only the following tags for content: `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`, `<h2>`, `<h3>`, `<h4>`. 
-    *   It should also correctly include existing `<a>` tags (for external links), `<img>` tags (within `<figure>`), and `<iframe>` tags (for videos) from the draft without altering their `src` or `href` attributes unless it's to fix a clear formatting error around them.
-    *   Do NOT add any introductory or concluding remarks outside of the article content itself (e.g., no "Here is the revised article:", "I have made the following changes:", etc.).
-    *   Do NOT add or change any HTML `id` attributes on existing header tags (h2, h3).
-    *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
+3.  **Formatting and Output Integrity:**
+    *   The final output MUST be **clean HTML code only**. For new content you generate, strictly use only the following tags: `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`. For existing structural tags like `<h2>`, `<h3>`, `<h4>`, ensure they are maintained.
+    *   **Preserve Existing Media and Links:** Crucially, existing `<a>` tags (for external links, with their `href`, `target`, `rel` attributes), `<img>` tags (within `<figure>`, with their `src`, `alt` attributes), and `<iframe>` tags (for videos, with their `src` and other attributes) from the draft **MUST be preserved** in their original form and placement. Do not alter these media/link tags unless to fix a very obvious and minor formatting error immediately вокруг them.
+    *   **No Extraneous Text:** Do NOT add any commentary, introductions, or conclusions outside of the article's HTML content itself (e.g., no "Here is the revised article:", "Changes made:", etc.).
+    *   **Preserve IDs:** Do NOT add, remove, or change any HTML `id` attributes on existing header tags (h2, h3, h4).
+    *   Ensure the output is free of weird characters, uninterpreted Markdown, or unnecessary empty lines.
 
-Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
+Your goal is to transform the draft into a more authoritative, detailed, and polished piece of content while adhering to the specified HTML structure and preserving existing media/links. If you lack specific data to insert for a claim, and generating a plausible placeholder is not feasible, you may slightly rephrase to make the claim more general but still valuable, or note areas where more specific data would improve the text if that is a standard editorial practice you are simulating. However, prioritize finding or generating relevant substantiating details.
 
 Here is the draft HTML content of the article:
 --------------------------------------------------

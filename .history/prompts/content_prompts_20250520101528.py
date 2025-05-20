@@ -209,10 +209,15 @@ The article's main topic is: "{article_topic}"
 The desired tone is: "{desired_tone}"
 The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
 
+Here is the draft HTML content of the article:
+--------------------------------------------------
+{draft_html_content}
+--------------------------------------------------
+
 Please perform the following actions on the draft:
 
 1.  **Enhance and Deepen Content:**
-    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
+    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims. If specific data is not available to you, you can suggest areas where such data would be beneficial using a placeholder like `[INSERT SPECIFIC STATISTIC/EXAMPLE ABOUT X HERE]`.
     *   Replace generic claims with more specific details or elaborations.
     *   Ensure each section flows logically into the next, improving transitions if necessary.
     *   Make the content more engaging and valuable for the reader without unnecessary padding.
@@ -232,9 +237,4 @@ Please perform the following actions on the draft:
     *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
 
 Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
-
-Here is the draft HTML content of the article:
---------------------------------------------------
-{draft_html_content}
---------------------------------------------------
 """

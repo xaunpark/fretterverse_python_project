@@ -203,35 +203,35 @@ SAY_I_LOVE_YOU_PROMPT = "Please respond with exactly three words expressing affe
 # ==============================================================================
 # PROMPT FOR REFINE AND FINALIZE ARTICLE
 # ==============================================================================
-REFINE_AND_FINALIZE_ARTICLE_PROMPT = """
-You are an expert editor tasked with refining and finalizing a draft article.
-The article's main topic is: "{article_topic}"
-The desired tone is: "{desired_tone}"
-The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
+REFINE_AND_FINALIZE_ARTICLE_PROMPT_OPTIMIZED = """
+You are an expert subject-matter editor and writer. Your task is to refine the provided draft HTML article on "{article_topic}" to enhance its quality, depth, authority, and readability, maintaining a "{desired_tone}" tone. Focus on substantive improvements rather than drastic length changes from the original section intents.
 
-Please perform the following actions on the draft:
+**Primary Goals for Content Enhancement:**
+1.  **Integrate Specifics:** Actively incorporate verifiable data, statistics, research-backed examples, or illustrative quotes to substantiate claims. If precise data is unavailable, suggest placeholders like `[ADD SPECIFIC DATA/EXAMPLE HERE]`.
+2.  **Elaborate and Add Nuance:** Expand on generic statements with detailed explanations, context, or varied perspectives.
+3.  **Strengthen Arguments & Cohesion:** Ensure all arguments are well-supported and logical. Improve transitions between ideas, paragraphs, and sections for a cohesive narrative.
+4.  **Increase Value & Engagement:** Make content more insightful and practically valuable, removing any superficial or redundant information.
 
-1.  **Enhance and Deepen Content:**
-    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
-    *   Replace generic claims with more specific details or elaborations.
-    *   Ensure each section flows logically into the next, improving transitions if necessary.
-    *   Make the content more engaging and valuable for the reader without unnecessary padding.
+**Editorial and Structural Guidelines:**
+1.  **Clarity and Conciseness:** Correct all grammar, punctuation, and spelling. Refine sentence structures for clarity and impact.
+2.  **Paragraphs:** Break down overly long paragraphs into shorter, digestible ones, each focusing on a core idea. Avoid "walls of text."
+3.  **Tone Consistency:** Ensure the "{desired_tone}" is maintained throughout.
 
-2.  **Editorial Review:**
-    *   Correct any grammar, punctuation, or spelling errors.
-    *   Ensure a consistent "{desired_tone}" tone is maintained throughout the article.
-    *   Remove any repetitive phrases, redundant sentences, or unnecessary content that does not add value.
-    *   Improve sentence structure for clarity and readability. Aim for concise and impactful language where appropriate.
-    *   Check for logical flow and coherence between sections and paragraphs.
+**HTML Integrity (VERY IMPORTANT - Adhere Strictly):**
+1.  **Output Format:** The final output MUST be **clean HTML code only**. Do not add any commentary or text outside the article's HTML structure.
+2.  **New Content Tags:** For any *new textual content* you generate, use only `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`.
+3.  **Preserve Existing Structural Tags:** All existing `<h2>`, `<h3>`, `<h4>` tags, **including their `id` attributes**, MUST remain unchanged and in their original relative positions.
+4.  **Preserve Media Tags:**
+    *   **Images (`<figure><img ...>`)**: MUST be preserved perfectly (src, alt, placement). DO NOT alter or remove.
+    *   **Videos (`<iframe>`):** MUST be preserved perfectly (src, attributes, placement). DO NOT alter or remove.
+5.  **Preserve and Adapt External Links (`<a>` tags):**
+    *   All existing `<a>` tags (external links) MUST be preserved in terms of their **count and their `href`, `target`, and `rel` attributes**. The destination URL (`href`) MUST NOT BE CHANGED.
+    *   You MAY CAREFULLY rephrase the **anchor text** (the visible text of the `<a>` tag) ONLY IF the surrounding edited text makes the original anchor awkward or grammatically incorrect. The new anchor text MUST remain highly relevant to the link's `href`.
+    *   Ensure the `<a>` tag structure is maintained if anchor text is modified.
+    *   DO NOT remove existing external links. Keep them contextually relevant to their original placement.
+6.  **No Weird Characters:** Ensure the output is free of uninterpreted Markdown or extraneous characters/lines.
 
-3.  **Formatting and Output:**
-    *   The final output MUST be **clean HTML code only**, using only the following tags for content: `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`, `<h2>`, `<h3>`, `<h4>`. 
-    *   It should also correctly include existing `<a>` tags (for external links), `<img>` tags (within `<figure>`), and `<iframe>` tags (for videos) from the draft without altering their `src` or `href` attributes unless it's to fix a clear formatting error around them.
-    *   Do NOT add any introductory or concluding remarks outside of the article content itself (e.g., no "Here is the revised article:", "I have made the following changes:", etc.).
-    *   Do NOT add or change any HTML `id` attributes on existing header tags (h2, h3).
-    *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
-
-Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
+Your final output should be a polished, authoritative, and structurally sound HTML article ready for publication, with all existing media and links carefully preserved as instructed.
 
 Here is the draft HTML content of the article:
 --------------------------------------------------

@@ -1344,10 +1344,10 @@ def refine_and_finalize_article_html_step(
     article_topic = article_meta.get("title", preparation_data.get("original_keyword", "the main topic"))
     desired_tone = preparation_data.get("keyword_analysis", {}).get("tone", config.get("DEFAULT_ARTICLE_TONE", "Professional"))
 
-    logger.info(f"--- Starting Step 6: Refining and Finalizing Article HTML for '{article_topic}' ---")
+    logger.info(f"--- Starting Step 5.5: Refining and Finalizing Article HTML for '{article_topic}' ---")
     logger.info(f"Desired tone: {desired_tone}. Length will be based on original section intents.")
 
-    prompt = content_prompts.REFINE_AND_FINALIZE_ARTICLE_PROMPT.format(
+    prompt = misc_prompts.REFINE_AND_FINALIZE_ARTICLE_PROMPT.format(
         article_topic=article_topic,
         desired_tone=desired_tone,
         draft_html_content=draft_html_content 
@@ -1360,10 +1360,7 @@ def refine_and_finalize_article_html_step(
             prompt_messages=[{"role": "user", "content": prompt}],
             model_name=finalizing_model,
             api_key=config.get('OPENAI_API_KEY'),
-            is_json_output=False,
-            target_api="openrouter",
-            openrouter_api_key=config.get('OPENROUTER_API_KEY'),
-            openrouter_base_url=config.get('OPENROUTER_BASE_URL')
+            is_json_output=False 
         )
 
         if final_html_output:
@@ -1775,20 +1772,17 @@ def finalize_and_publish_article_step(
             serialized_php_string = _php_serialize_internal_link_keywords(actual_ilj_keywords_list)
             logger.debug(f"Serialized PHP for ILJ: {serialized_php_string}")
 
-            table_prefix = config.get('WP_TABLE_PREFIX', 'wp_') # Lấy table prefix từ config, fallback 'wp_'
-            postmeta_table_name = f"{table_prefix}postmeta"
-
             # Xóa meta_key ilj_linkdefinition cũ (nếu có nhiều hơn 1)
             # Query này đã được điều chỉnh để chỉ xóa các bản ghi thừa, giữ lại bản ghi có meta_id lớn nhất.
             # Nếu không có bản ghi nào, nó sẽ không xóa gì.
             # Nếu chỉ có 1 bản ghi, nó cũng không xóa gì.
-            delete_duplicate_ilj_query = f"""
-            DELETE FROM {postmeta_table_name}
+            delete_duplicate_ilj_query = """
+            DELETE FROM wp_fae40_postmeta
             WHERE post_id = %s AND meta_key = 'ilj_linkdefinition'
             AND meta_id NOT IN (
                 SELECT meta_id_to_keep FROM (
                     SELECT MAX(meta_id) as meta_id_to_keep
-                    FROM {postmeta_table_name}
+                    FROM wp_fae40_postmeta
                     WHERE post_id = %s AND meta_key = 'ilj_linkdefinition'
                 ) AS temp_table
             );
@@ -1799,15 +1793,15 @@ def finalize_and_publish_article_step(
 
             # Insert hoặc Update (UPSERT)
             # Kiểm tra xem có record nào còn lại không sau khi xóa duplicate
-            check_existing_query = f"SELECT meta_id FROM {postmeta_table_name} WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' LIMIT 1"
+            check_existing_query = "SELECT meta_id FROM wp_fae40_postmeta WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' LIMIT 1"
             existing_ilj_meta = db_handler.execute_query(check_existing_query, params=(post_id,), fetch_one=True)
 
             if existing_ilj_meta: # Nếu còn record, thì UPDATE nó
-                update_ilj_query = f"UPDATE {postmeta_table_name} SET meta_value = %s WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' AND meta_id = %s"
+                update_ilj_query = "UPDATE wp_fae40_postmeta SET meta_value = %s WHERE post_id = %s AND meta_key = 'ilj_linkdefinition' AND meta_id = %s"
                 result_ilj_db = db_handler.execute_query(update_ilj_query, params=(serialized_php_string, post_id, existing_ilj_meta['meta_id']))
                 logger.info(f"Updated existing ILJ data for post ID {post_id}. Rows affected: {result_ilj_db}")
             else: # Nếu không còn record nào, thì INSERT mới
-                insert_ilj_query = f"INSERT INTO {postmeta_table_name} (post_id, meta_key, meta_value) VALUES (%s, 'ilj_linkdefinition', %s)"
+                insert_ilj_query = "INSERT INTO wp_fae40_postmeta (post_id, meta_key, meta_value) VALUES (%s, 'ilj_linkdefinition', %s)"
                 result_ilj_db = db_handler.execute_query(insert_ilj_query, params=(post_id, serialized_php_string))
                 logger.info(f"Inserted new ILJ data for post ID {post_id}. Rows affected: {result_ilj_db}")
 
@@ -1929,7 +1923,7 @@ def orchestrate_article_creation(keyword_to_process: str,
         return {"status": "failed", "step": 5, "reason": "HTML assembly failed", "keyword": keyword_to_process}
 
     # --- BƯỚC 6: Chỉnh sửa, Mở rộng và Hoàn thiện Toàn bộ Bài Viết ---
-    logger.info("--- Running Step 6: Refine and Finalize Full HTML ---")
+    logger.info("--- Running Step 5.5: Refine and Finalize Full HTML ---")
     final_article_html = refine_and_finalize_article_html_step(
         draft_html_content=assembled_html_draft,
         article_meta=outline_results.get("article_meta"),
@@ -1937,11 +1931,11 @@ def orchestrate_article_creation(keyword_to_process: str,
         config=config
     )
     if not final_article_html: # Nếu refine lỗi, có thể quyết định dùng bản nháp hoặc dừng
-        logger.warning(f"Step 6 (Refinement) failed or returned no content for '{keyword_to_process}'. Using assembled draft for publishing.")
+        logger.warning(f"Step 5.5 (Refinement) failed or returned no content for '{keyword_to_process}'. Using assembled draft for publishing.")
         final_article_html = assembled_html_draft # Dùng bản nháp đã ráp nối
 
     # --- Bước 7: Đăng bài và Hoàn tất ---
-    logger.info("--- Running Step 7: Finalize and Publish Article ---")
+    logger.info("--- Running Step 6: Finalize and Publish Article ---")
     publish_results = finalize_and_publish_article_step(
         full_article_html=final_article_html,
         article_meta=outline_results.get("article_meta"),
@@ -1952,7 +1946,7 @@ def orchestrate_article_creation(keyword_to_process: str,
         unique_run_id=current_run_id # Truyền unique_run_id
     )
     if not publish_results or not publish_results.get("post_id"):
-        logger.error(f"Step 7 failed for keyword '{keyword_to_process}'. Article may not be published.")
+        logger.error(f"Step 6 failed for keyword '{keyword_to_process}'. Article may not be published.")
         return {"status": "failed", "step": 6, "reason": "Publishing failed", "keyword": keyword_to_process, "details": publish_results}
 
     logger.info(f"=== ARTICLE ORCHESTRATION COMPLETED SUCCESSFULLY FOR: '{keyword_to_process}' ===")

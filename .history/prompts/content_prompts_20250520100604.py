@@ -207,34 +207,37 @@ REFINE_AND_FINALIZE_ARTICLE_PROMPT = """
 You are an expert editor tasked with refining and finalizing a draft article.
 The article's main topic is: "{article_topic}"
 The desired tone is: "{desired_tone}"
-The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
+The target approximate length is: {target_length_words} words. 
+(Note: This is a guideline; quality and coherence are more important than exact word count. Focus on adding value if expanding.)
+
+Here is the draft HTML content of the article:
+--------------------------------------------------
+{draft_html_content}
+--------------------------------------------------
 
 Please perform the following actions on the draft:
 
 1.  **Enhance and Deepen Content:**
-    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
+    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims. If specific data is not available to you, you can suggest areas where such data would be beneficial using a placeholder like `[INSERT SPECIFIC STATISTIC/EXAMPLE ABOUT X HERE]`.
     *   Replace generic claims with more specific details or elaborations.
     *   Ensure each section flows logically into the next, improving transitions if necessary.
-    *   Make the content more engaging and valuable for the reader without unnecessary padding.
 
-2.  **Editorial Review:**
+2.  **Optimize for Length (if specified and content can be naturally expanded):**
+    *   If the current content is significantly shorter than {target_length_words} words, expand on existing points or add relevant sub-points, ensuring any new content adds value and maintains the article's focus and tone. Do not add filler content just to reach a word count.
+
+3.  **Editorial Review:**
     *   Correct any grammar, punctuation, or spelling errors.
     *   Ensure a consistent "{desired_tone}" tone is maintained throughout the article.
-    *   Remove any repetitive phrases, redundant sentences, or unnecessary content that does not add value.
-    *   Improve sentence structure for clarity and readability. Aim for concise and impactful language where appropriate.
+    *   Remove any repetitive phrases, redundant sentences, or unnecessary content.
+    *   Improve sentence structure for clarity and readability. Ensure short, digestible paragraphs.
     *   Check for logical flow and coherence between sections and paragraphs.
 
-3.  **Formatting and Output:**
+4.  **Formatting and Output:**
     *   The final output MUST be **clean HTML code only**, using only the following tags for content: `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`, `<h2>`, `<h3>`, `<h4>`. 
     *   It should also correctly include existing `<a>` tags (for external links), `<img>` tags (within `<figure>`), and `<iframe>` tags (for videos) from the draft without altering their `src` or `href` attributes unless it's to fix a clear formatting error around them.
     *   Do NOT add any introductory or concluding remarks outside of the article content itself (e.g., no "Here is the revised article:", "I have made the following changes:", etc.).
     *   Do NOT add or change any HTML `id` attributes on existing header tags (h2, h3).
     *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
 
-Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
-
-Here is the draft HTML content of the article:
---------------------------------------------------
-{draft_html_content}
---------------------------------------------------
+Please provide the fully refined and finalized HTML content of the article.
 """
