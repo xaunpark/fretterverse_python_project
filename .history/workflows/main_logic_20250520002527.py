@@ -5,9 +5,6 @@ import re
 import time # Cho việc sleep nếu cần
 import html
 import requests
-import random # Thêm import random
-import datetime # Thêm import datetime
-from datetime import timezone # Cụ thể hơn cho timezone.utc
 from bs4 import BeautifulSoup # Thêm BeautifulSoup
 from utils.api_clients import (
     call_openai_dalle, 
@@ -1450,63 +1447,6 @@ def _php_serialize_internal_link_keywords(keywords_list):
     return f'a:{len(serialized_parts)}:{{{"".join(serialized_parts)}}}'
 
 
-def _generate_random_past_publish_date(start_date_str, end_date_str, logger_instance):
-    """
-    Tạo một chuỗi ngày giờ ISO8601 UTC ngẫu nhiên trong khoảng thời gian cho trước.
-    Trả về chuỗi ngày giờ hoặc None nếu có lỗi.
-    """
-    try:
-        # 1. Phân tích và xác thực ngày tháng
-        start_date_obj = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        end_date_obj = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-        if start_date_obj > end_date_obj:
-            logger_instance.error(f"Past date publishing: Start date ({start_date_str}) is after end date ({end_date_str}).")
-            return None
-
-        # Đảm bảo end_date_obj không phải là một ngày trong tương lai quá xa so với ngày hiện tại
-        # (ví dụ: không cho phép đăng bài cho ngày mai nếu end_date là ngày mai)
-        # Điều này giúp tránh đăng bài trong tương lai nếu cấu hình không cẩn thận.
-        # if end_date_obj >= datetime.date.today():
-        #     logger_instance.warning(
-        #         f"Past date publishing: End date ({end_date_str}) is today or in the future. "
-        #         f"Ensure this is intended. Random date will be chosen up to this end date."
-        #     )
-
-        # 2. Tạo phần ngày ngẫu nhiên
-        time_difference_days = (end_date_obj - start_date_obj).days
-        if time_difference_days < 0: # Should be caught by start_date_obj > end_date_obj
-             return None 
-
-        random_day_offset = random.randint(0, time_difference_days)
-        random_date_part = start_date_obj + datetime.timedelta(days=random_day_offset)
-
-        # 3. Tạo phần giờ ngẫu nhiên (ví dụ: từ 8 giờ sáng đến 9:59 tối)
-        random_hour = random.randint(8, 21) 
-        random_minute = random.randint(0, 59)
-        random_second = random.randint(0, 59)
-
-        # 4. Kết hợp ngày và giờ, tạo đối tượng datetime naive
-        publish_dt_naive = datetime.datetime(
-            random_date_part.year, random_date_part.month, random_date_part.day,
-            random_hour, random_minute, random_second
-        )
-
-        # 5. Chuyển đổi sang UTC và định dạng ISO8601 (YYYY-MM-DDTHH:MM:SS)
-        # WordPress mong đợi date_gmt ở định dạng này và hiểu nó là UTC.
-        publish_dt_utc_aware = publish_dt_naive.replace(tzinfo=timezone.utc)
-        iso_date_str = publish_dt_utc_aware.strftime('%Y-%m-%dT%H:%M:%S') 
-        
-        logger_instance.info(f"Generated random past publish date: {iso_date_str} (UTC)")
-        return iso_date_str
-
-    except ValueError as ve:
-        logger_instance.error(f"Past date publishing: Invalid date format for start/end date. Start: '{start_date_str}', End: '{end_date_str}'. Error: {ve}")
-        return None
-    except Exception as e:
-        logger_instance.error(f"Past date publishing: Error generating random past date: {e}", exc_info=True)
-        return None
-
 def finalize_and_publish_article_step(
     full_article_html, article_meta, preparation_data,
     config, gsheet_handler, db_handler, 
@@ -1540,7 +1480,7 @@ def finalize_and_publish_article_step(
     featured_image_wp_id = None
     # Đọc cấu hình featured image từ đối tượng lồng nhau
     featured_image_settings = config.get('FEATURED_IMAGE_CONFIG', {})
-    if featured_image_settings.get('ENABLED', False): # Mặc định là False nếu key không tồn tại
+    if featured_image_settings.get('ENABLED', True): # Mặc định là True nếu key không tồn tại
         logger.info("Generating DALL-E prompt for featured image...")
 
         if dalle_prompt_description:
@@ -1614,30 +1554,11 @@ def finalize_and_publish_article_step(
         "author_id": int(author_id_for_post),
         "excerpt": article_meta.get('description')
         # "featured_media_id": featured_image_wp_id # Thêm nếu hàm create_wp_post có tham số này
-        # Sẽ được xử lý bởi update_wp_post sau
     }
-
-    # Logic để xác định ngày đăng bài tùy chỉnh
-    publish_date_gmt_iso_for_post = None
-    if config.get('PAST_DATE_PUBLISHING_ENABLED'):
-        start_date_str = config.get('PAST_DATE_PUBLISHING_START_DATE')
-        end_date_str = config.get('PAST_DATE_PUBLISHING_END_DATE')
-
-        if start_date_str and end_date_str:
-            logger.info("Past date publishing is enabled. Attempting to generate a random past date.")
-            publish_date_gmt_iso_for_post = _generate_random_past_publish_date(start_date_str, end_date_str, logger)
-            
-            if not publish_date_gmt_iso_for_post:
-                logger.warning("Failed to generate a random past publish date. Proceeding with current time for publishing.")
-        else:
-            logger.warning("Past date publishing is enabled, but PAST_DATE_PUBLISHING_START_DATE or PAST_DATE_PUBLISHING_END_DATE is missing/invalid in config. Proceeding with current time.")
-    else:
-        logger.info("Past date publishing is not enabled. Article will be published with current time.")
 
     created_post_response = create_wp_post(
         base_url=wp_base_url, auth_user=wp_user, auth_pass=wp_pass,
-        publish_date_gmt_iso=publish_date_gmt_iso_for_post, # Truyền ngày đăng tùy chỉnh
-        **post_payload_for_function 
+        **post_payload_for_function # Giải nén dict này
     )
 
     post_id = None
@@ -1645,8 +1566,7 @@ def finalize_and_publish_article_step(
     if created_post_response and created_post_response.get('id'):
         post_id = created_post_response.get('id')
         post_url = created_post_response.get('link')
-        publish_time_info = f"at {publish_date_gmt_iso_for_post} (UTC)" if publish_date_gmt_iso_for_post else "with current time"
-        logger.info(f"WordPress post created successfully {publish_time_info}! ID: {post_id}, URL: {post_url}")
+        logger.info(f"WordPress post created successfully! ID: {post_id}, URL: {post_url}")
 
         if featured_image_wp_id:
             time.sleep(config.get('WP_UPDATE_DELAY', 2)) 

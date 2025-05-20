@@ -13,11 +13,7 @@
     "FEATURED_IMAGE_RESIZE_WIDTH": 800,
     "USER_AGENT": "FretterVersePythonBot/1.0 (+http://fretterverse.com/bot-info)",
     "WP_TABLE_PREFIX": "wp_fae40_",
-
-    "PAST_DATE_PUBLISHING_ENABLED": true,
-    "PAST_DATE_PUBLISHING_START_DATE": "2024-07-01",
-    "PAST_DATE_PUBLISHING_END_DATE": "2025-04-30",
-
+  
     "GSHEET_SPREADSHEET_ID": "1YdItQM7Acf_H3OvrkVMVOqqjcLiSUniw5Yuei_1Z_Gs",
     "GSHEET_KEYWORD_SHEET_NAME": "Keyword",
     "GSHEET_KEYWORD_SHEET_NAME_USED_0": "Keyword Used = 0",

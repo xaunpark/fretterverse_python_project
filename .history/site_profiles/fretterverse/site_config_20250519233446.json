@@ -13,11 +13,7 @@
     "FEATURED_IMAGE_RESIZE_WIDTH": 800,
     "USER_AGENT": "FretterVersePythonBot/1.0 (+http://fretterverse.com/bot-info)",
     "WP_TABLE_PREFIX": "wp_fae40_",
-
-    "PAST_DATE_PUBLISHING_ENABLED": true,
-    "PAST_DATE_PUBLISHING_START_DATE": "2024-07-01",
-    "PAST_DATE_PUBLISHING_END_DATE": "2025-04-30",
-
+  
     "GSHEET_SPREADSHEET_ID": "1YdItQM7Acf_H3OvrkVMVOqqjcLiSUniw5Yuei_1Z_Gs",
     "GSHEET_KEYWORD_SHEET_NAME": "Keyword",
     "GSHEET_KEYWORD_SHEET_NAME_USED_0": "Keyword Used = 0",
@@ -38,7 +34,7 @@
     "PINECONE_CLOUD_PROVIDER": "aws",
     "PINECONE_REGION": "us-west-2",
     "SITE_SPECIFIC_PROMPT_VALUES": {
-      "CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT": "Given that I have a website about music and musical instruments and need to write blog posts, evaluate whether the keyword '{keyword}' is suitable for the blog post.\nA keyword is suitable ('yes') if it meets the following criteria:\n\nRelates to general music knowledge, technical guidance, or musical instruments.\nExcludes overly specific keywords about tabs, chords, charts, or individual song titles.\nAvoids biographical trivia, personal gossip, or pop culture unless directly tied to music, instruments, or their impact.\nAvoids keywords about artist deaths, health, or unrelated locations unless relevant to their musical legacy.\nRespond in JSON format with 'yes' or 'no'. \n \nFor example, 'Guitar Tabs' is not suitable, while 'Guitar Techniques' is suitable.\n Example of response: {{\"suitable\": \"yes\"}}"
+      "CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT": "Given that I have a website about music and musical instruments and need to write blog posts, evaluate whether the keyword '{keyword}' is suitable for the blog post.\nA keyword is suitable ('yes') if it meets the following criteria:\n\nRelates to general music knowledge, technical guidance, or musical instruments.\nExcludes overly specific keywords about tabs, chords, charts, or individual song titles.\nAvoids biographical trivia, personal gossip, or pop culture unless directly tied to music, instruments, or their impact.\nAvoids keywords about artist deaths, health, or unrelated locations unless relevant to their musical legacy.\nRespond in JSON format with 'yes' or 'no'. \n \nFor example, 'Guitar Tabs' is not suitable, while 'Guitar Techniques' is suitable.\n Example of response: {\"suitable\": \"yes\"}"
     },
     "AUTHOR_PERSONAS": [
       {
