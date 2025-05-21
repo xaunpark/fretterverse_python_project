@@ -13,24 +13,41 @@ from utils.pinecone_handler import PineconeHandler
 from workflows.main_logic import normalize_keyword_for_pinecone_id # Dùng lại hàm chuẩn hóa ID
 
 # --- Global Variables / Setup ---
-# APP_CONFIG will be loaded and used within main_delete or passed if necessary.
+APP_CONFIG = None
 logger = None
 
-def setup_script_logging(config_for_logging):
-    """Initializes logging for this script based on the provided config."""
-    global logger
+def initialize_app_for_delete():
+    """Initializes configuration and logging for this script."""
+    global APP_CONFIG, logger
     try:
-        log_level = "DEBUG" if config_for_logging.get('DEBUG_MODE') else "INFO"
+        APP_CONFIG = load_app_config()
+        log_level = "DEBUG" if APP_CONFIG.get('DEBUG_MODE') else "INFO"
         setup_logging(log_level_str=log_level, log_to_console=True, log_to_file=False) # Chỉ log ra console
         logger = logging.getLogger(__name__)
-        logger.info("Delete Script: Logging initialized.")
+        logger.info("Delete Script: Application initialized successfully.")
         return True
     except Exception as e:
-        # Fallback print if logger setup fails
-        print(f"CRITICAL: Error during logging setup for delete script: {e}")
+        print(f"CRITICAL: Error during application initialization for delete script: {e}")
         return False
 
-# The load_site_config function is no longer needed as load_app_config(site_name=...) handles this.
+def load_site_config(site_profile_name, app_config):
+    """Loads the site-specific configuration file."""
+    project_root = app_config.get('PROJECT_ROOT_DIR')
+    if not project_root:
+        logger.warning("Delete Script: PROJECT_ROOT_DIR not found in APP_CONFIG. Assuming script's parent directory is project root.")
+        project_root = os.path.dirname(os.path.abspath(__file__)) # Thư mục chứa script này
+
+    site_profiles_dir_name = app_config.get('SITE_PROFILES_DIR_NAME', 'site_profiles')
+    site_config_path = os.path.join(project_root, site_profiles_dir_name, site_profile_name, 'site_config.json')
+    
+    logger.info(f"Delete Script: Attempting to load site config from: {site_config_path}")
+    if not os.path.exists(site_config_path):
+        raise FileNotFoundError(f"Site configuration file not found: {site_config_path}")
+    
+    with open(site_config_path, 'r', encoding='utf-8') as f:
+        site_config_data = json.load(f)
+    logger.info(f"Delete Script: Site config for '{site_profile_name}' loaded successfully.")
+    return site_config_data
 
 def get_keywords_to_delete(gsheet_handler, spreadsheet_id, delete_sheet_name):
     """
@@ -152,55 +169,45 @@ def main_delete():
     args = parser.parse_args()
     site_profile_name = args.site_profile
 
-    # Load the comprehensive APP_CONFIG using the site_profile_name.
-    # This will include settings.py, global .env, site_config.json, and site .env.
-    try:
-        app_config = load_app_config(site_name=site_profile_name)
-    except Exception as e:
-        # Basic print if config load fails before full logger setup
-        print(f"CRITICAL: Error loading application configuration for site '{site_profile_name}': {e}")
-        return
-
-    # Setup logging using the loaded configuration
-    if not setup_script_logging(app_config):
-        print(f"CRITICAL: Failed to initialize logging. Exiting.")
+    if not initialize_app_for_delete():
         return
 
     logger.info(f"=== Pinecone Keyword Deletion Script Started for site: {site_profile_name} ===")
 
-    # Get GSheet Spreadsheet ID from the merged app_config
-    gsheet_spreadsheet_id = app_config.get('GSHEET_SPREADSHEET_ID')
+    # Load site-specific config
+    try:
+        site_config = load_site_config(site_profile_name, APP_CONFIG)
+    except FileNotFoundError:
+        logger.critical(f"Delete Script: Site config file not found for profile '{site_profile_name}'. Exiting.")
+        return
+    except Exception as e:
+        logger.critical(f"Delete Script: Error loading site config for '{site_profile_name}': {e}. Exiting.", exc_info=True)
+        return
+
+    # Lấy thông tin Google Sheet từ site_config
+    gs_config = site_config.get('google_sheets', {})
+    gsheet_spreadsheet_id = gs_config.get('spreadsheet_id')
     if not gsheet_spreadsheet_id:
-        logger.critical(f"Delete Script: 'GSHEET_SPREADSHEET_ID' not found in the effective configuration for '{site_profile_name}'. Exiting.")
+        logger.critical(f"Delete Script: 'google_sheets.spreadsheet_id' not found in site_config for '{site_profile_name}'. Exiting.")
         return
     
-    # Get GSheet Delete Sheet Name from merged app_config, with a fallback.
-    # settings.py can define a default for GSHEET_DELETE_SHEET_NAME,
-    # site_config.json or site .env can override it.
-    gsheet_delete_sheet_name = app_config.get('GSHEET_DELETE_SHEET_NAME', 'Delete')
+    # Lấy tên sheet "Delete": ưu tiên từ site_config, nếu không có thì từ APP_CONFIG, cuối cùng là 'Delete'
+    gsheet_delete_sheet_name = gs_config.get('delete_sheet_name', APP_CONFIG.get('GSHEET_DELETE_SHEET_NAME', 'Delete'))
 
-    # Get Pinecone Index Name from merged app_config.
-    pinecone_index_name = app_config.get('PINECONE_INDEX_NAME')
-    if not pinecone_index_name:
-        logger.critical(f"Delete Script: 'PINECONE_INDEX_NAME' not found in the effective configuration for '{site_profile_name}'. Exiting.")
-        return
+    # Pinecone index name: ưu tiên từ site_config, nếu không có thì PineconeHandler sẽ dùng từ APP_CONFIG
+    pinecone_config = site_config.get('pinecone', {})
+    pinecone_index_name_override = pinecone_config.get('index_name') # Sẽ là None nếu không có trong site_config
 
-    # Ensure Pinecone API Key is present in the merged app_config.
-    if not app_config.get('PINECONE_API_KEY'):
-        logger.critical(f"Delete Script: 'PINECONE_API_KEY' not found in the effective configuration. Ensure it's in a .env file or settings.py. Exiting.")
-        return
-
-    # Initialize handlers with the comprehensive app_config
-    gsheet_handler = GoogleSheetsHandler(config=app_config)
-    # PineconeHandler will use PINECONE_API_KEY from app_config.
-    # It will use the passed pinecone_index_name.
-    pinecone_handler = PineconeHandler(config=app_config, index_name=pinecone_index_name)
+    gsheet_handler = GoogleSheetsHandler(config=APP_CONFIG)
+    # PineconeHandler sẽ sử dụng pinecone_index_name_override nếu được cung cấp,
+    # nếu không sẽ lấy từ APP_CONFIG.
+    pinecone_handler = PineconeHandler(config=APP_CONFIG, index_name=pinecone_index_name_override)
 
     if not gsheet_handler.is_connected():
         logger.critical("Delete Script: Could not connect to Google Sheets. Exiting.")
         return
     if not pinecone_handler.is_connected():
-        logger.critical(f"Delete Script: Could not connect to Pinecone (index: '{pinecone_handler.index_name}'). Exiting.")
+        logger.critical(f"Delete Script: Could not connect to Pinecone (index: {pinecone_handler.index_name}). Exiting.")
         return
     logger.info(f"Delete Script: Successfully connected to Pinecone index: {pinecone_handler.index_name}")
 
