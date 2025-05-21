@@ -120,10 +120,7 @@ Generate content strictly in HTML format, using only the following tags: <p> for
 Pay special attention to creating a smooth transition at both the beginning and end of this section, 
 ensuring it fits cohesively within the overall theme of the article. This chapter should be 
 concise yet rich with insightful observations, seamlessly integrated into the broader context 
-of the article. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional coherence and context, refer back to the full article outline: {section_names_list}.
+of the article. For additional coherence and context, refer back to the full article outline: {section_names_list}.
 """
 
 # ==============================================================================
@@ -149,10 +146,8 @@ Pay special attention to the placement of this section within the overall outlin
 Create logical and enhancing transitions at both the beginning and the end of this section, 
 ensuring it contributes cohesively to the overall theme of the article. This section should be 
 concise and seamlessly integrated into the broader context of the article, providing insightful 
-observations without unnecessary repetition. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context and coherence, refer back to the full article outline: {section_names_list}.
+observations without unnecessary repetition. For additional context and coherence, refer back to 
+the full article outline: {section_names_list}.
 """
 
 # ==============================================================================
@@ -205,10 +200,7 @@ Pay special attention to the placement of this review within the overall outline
 Create logical and enhancing transitions at both the beginning and the end of this review, 
 ensuring it contributes cohesively to the overall theme of the article. This review should be 
 concise and seamlessly integrated into the broader context of the article, providing insightful 
-observations without unnecessary repetition. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context and coherence, refer back to 
+observations without unnecessary repetition. For additional context and coherence, refer back to 
 the full article outline: {section_names_list}.
 """
 

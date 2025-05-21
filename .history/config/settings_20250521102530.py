@@ -34,8 +34,8 @@ GOOGLE_SEARCH_NUM_RESULTS = 10 # Số kết quả lấy từ Google Search cho p
 SERPER_API_KEY = None # Sẽ được override bởi .env
 SERPER_BASE_URL = "https://google.serper.dev"
 SEARCH_PROVIDER = "serper" # Giá trị có thể là "google" hoặc "serper"
-IMAGE_SEARCH_MIN_WIDTH = 400 # Kích thước chiều rộng tối thiểu cho ảnh từ Serper
-IMAGE_SEARCH_MIN_HEIGHT = 100 # Kích thước chiều cao tối thiểu cho ảnh từ Serper
+IMAGE_SEARCH_MIN_WIDTH = 800 # Kích thước chiều rộng tối thiểu cho ảnh từ Serper
+IMAGE_SEARCH_MIN_HEIGHT = 600 # Kích thước chiều cao tối thiểu cho ảnh từ Serper
 YOUTUBE_SEARCH_NUM_RESULTS = 5
 
 # --- Cấu hình logic nghiệp vụ ---

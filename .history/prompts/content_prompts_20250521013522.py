@@ -20,10 +20,7 @@ Write in the first-person perspective as {author_name}, fully embodying the expe
 
 Generate content strictly in HTML format, using only the following tags: <p> for paragraphs, <strong> for key points, and <em> for nuanced emphasis. Do not use any other HTML tags such as <div>, <span>, <html>, <head>, or <body>. Do not use Markdown. Ensure the output is clean, visually appealing, and flows naturally. The content must adhere strictly to these tag rules and avoid unnecessary formatting, document structure tags, or redundant information such as repeating titles.
 
-This section should be concise, providing a seamless transition into the detailed discussions that follow in the article. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context, refer back to the full article outline, including sections such as: {section_names_list}.
+This section should be concise, providing a seamless transition into the detailed discussions that follow in the article. For additional context, refer back to the full article outline, including sections such as: {section_names_list}.
 """
 # Lưu ý: Prompt gốc trong n8n cho Introduction có phần phức tạp hơn về các loại hook.
 # Bạn có thể tích hợp logic chọn hook vào Python hoặc đơn giản hóa prompt như trên.
@@ -48,10 +45,7 @@ Write in the first-person perspective as {author_name}, fully embodying the expe
 
 Generate content strictly in HTML format, using only the following tags: <p> for paragraphs, <strong> for key points, and <em> for nuanced emphasis. Do not use any other HTML tags such as <div>, <span>, <html>, <head>, or <body>. Do not use Markdown. Ensure the output is clean, visually appealing, and flows naturally. The content must adhere strictly to these tag rules and avoid unnecessary formatting, document structure tags, or redundant information such as repeating titles.
 
-This section should be concise, providing a seamless transition into the detailed discussions that follow in the article.
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context, refer back to the full article outline, including sections such as: {section_names_list}.
+This section should be concise, providing a seamless transition into the detailed discussions that follow in the article. For additional context, refer back to the full article outline, including sections such as: {section_names_list}.
 """
 # Bạn sẽ cần thêm placeholder {keyword_for_hook} khi format prompt này.
 
@@ -71,10 +65,7 @@ Write in the first-person perspective as {author_name}, fully embodying the expe
 
 Generate content strictly in HTML format, using only the following tags: <p> for paragraphs, <strong> for key points, and <em> for nuanced emphasis. Do not use any other HTML tags such as <div>, <span>, <html>, <head>, or <body>. Do not use Markdown. Ensure the output is clean, visually appealing, and flows naturally. The content must adhere strictly to these tag rules and avoid unnecessary formatting, document structure tags, or redundant information such as repeating titles.
 
-This section should be concise yet powerful, providing a seamless integration into the broader context of the article.
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context and to ensure a coherent wrap-up, refer back to the full article outline, including sections such as: {section_names_list}.
+This section should be concise yet powerful, providing a seamless integration into the broader context of the article. For additional context and to ensure a coherent wrap-up, refer back to the full article outline, including sections such as: {section_names_list}.
 """
 
 # ==============================================================================
@@ -120,10 +111,7 @@ Generate content strictly in HTML format, using only the following tags: <p> for
 Pay special attention to creating a smooth transition at both the beginning and end of this section, 
 ensuring it fits cohesively within the overall theme of the article. This chapter should be 
 concise yet rich with insightful observations, seamlessly integrated into the broader context 
-of the article. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional coherence and context, refer back to the full article outline: {section_names_list}.
+of the article. For additional coherence and context, refer back to the full article outline: {section_names_list}.
 """
 
 # ==============================================================================
@@ -149,10 +137,8 @@ Pay special attention to the placement of this section within the overall outlin
 Create logical and enhancing transitions at both the beginning and the end of this section, 
 ensuring it contributes cohesively to the overall theme of the article. This section should be 
 concise and seamlessly integrated into the broader context of the article, providing insightful 
-observations without unnecessary repetition. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context and coherence, refer back to the full article outline: {section_names_list}.
+observations without unnecessary repetition. For additional context and coherence, refer back to 
+the full article outline: {section_names_list}.
 """
 
 # ==============================================================================
@@ -205,10 +191,7 @@ Pay special attention to the placement of this review within the overall outline
 Create logical and enhancing transitions at both the beginning and the end of this review, 
 ensuring it contributes cohesively to the overall theme of the article. This review should be 
 concise and seamlessly integrated into the broader context of the article, providing insightful 
-observations without unnecessary repetition. 
-AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-For additional context and coherence, refer back to 
+observations without unnecessary repetition. For additional context and coherence, refer back to 
 the full article outline: {section_names_list}.
 """
 
@@ -226,35 +209,32 @@ The article's main topic is: "{article_topic}"
 The desired tone is: "{desired_tone}"
 The content provided is structured into sections, and each section was initially intended to have a certain length. While refining, focus on quality and coherence rather than drastically altering the overall length from the sum of its original section lengths.
 
-Please perform the following actions on the draft:
-
-1.  **Enhance and Deepen Content:**
-    *   Actively incorporate verifiable data, statistics, research-backed examples, or illustrative quotes to substantiate claims.
-    *   Expand on generic statements with detailed explanations, context, or varied perspectives.
-    *   Ensure all arguments are well-supported and logical. Improve transitions between ideas, paragraphs, and sections for a cohesive narrative.
-    *   Make content more insightful and practically valuable, removing any superficial or redundant information.
-
-2.  **Preserve Media Tags:**
-    *   **Images (`<figure><img ...>`)**: MUST be preserved perfectly (src, alt, placement). DO NOT alter or remove.
-    *   **Videos (`<iframe>`):** MUST be preserved perfectly (src, attributes, placement). DO NOT alter or remove.
-
-3.  **Preserve and Adapt External Links (`<a>` tags):**
-    *   All existing `<a>` tags (external links) MUST be preserved in terms of their **count and their `href`, `target`, and `rel` attributes**. The destination URL (`href`) MUST NOT BE CHANGED.
-    *   You MAY CAREFULLY rephrase the **anchor text** (the visible text of the `<a>` tag) ONLY IF the surrounding edited text makes the original anchor awkward or grammatically incorrect. The new anchor text MUST remain highly relevant to the link's `href`.
-    *   Ensure the `<a>` tag structure is maintained if anchor text is modified.
-    *   DO NOT remove existing external links. Keep them contextually relevant to their original placement.
-
-4.  **Formatting and Output:**
-    *   It MUST also correctly include existing `<a>` tags (for external links), `<img>` tags (within `<figure>`), and `<iframe>` tags (for videos) from the draft without altering their `src` or `href` attributes unless it's to fix a clear formatting error around them.
-    *   Do NOT add any introductory or concluding remarks outside of the article content itself (e.g., no "Here is the revised article:", "I have made the following changes:", etc.).
-    *   Do NOT add or change any HTML `id` attributes on existing header tags (h2, h3).
-    *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
-    *   AVOID WALLS OF TEXT. Use paragraphs and line breaks to enhance readability.
-
-Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
-
 Here is the draft HTML content of the article:
 --------------------------------------------------
 {draft_html_content}
 --------------------------------------------------
+
+Please perform the following actions on the draft:
+
+1.  **Enhance and Deepen Content:**
+    *   Where appropriate, add research-backed examples, statistics, or illustrative quotes to strengthen arguments and claims.
+    *   Replace generic claims with more specific details or elaborations.
+    *   Ensure each section flows logically into the next, improving transitions if necessary.
+    *   Make the content more engaging and valuable for the reader without unnecessary padding.
+
+2.  **Editorial Review:**
+    *   Correct any grammar, punctuation, or spelling errors.
+    *   Ensure a consistent "{desired_tone}" tone is maintained throughout the article.
+    *   Remove any repetitive phrases, redundant sentences, or unnecessary content that does not add value.
+    *   Improve sentence structure for clarity and readability. Aim for concise and impactful language where appropriate.
+    *   Check for logical flow and coherence between sections and paragraphs.
+
+3.  **Formatting and Output:**
+    *   The final output MUST be **clean HTML code only**, using only the following tags for content: `<p>`, `<strong>`, `<em>`, `<ul>`, `<li>`, `<h2>`, `<h3>`, `<h4>`. 
+    *   It should also correctly include existing `<a>` tags (for external links), `<img>` tags (within `<figure>`), and `<iframe>` tags (for videos) from the draft without altering their `src` or `href` attributes unless it's to fix a clear formatting error around them.
+    *   Do NOT add any introductory or concluding remarks outside of the article content itself (e.g., no "Here is the revised article:", "I have made the following changes:", etc.).
+    *   Do NOT add or change any HTML `id` attributes on existing header tags (h2, h3).
+    *   Ensure there are no weird characters, uninterpreted Markdown, or extraneous lines.
+
+Please provide the fully refined and finalized HTML content of the article, respecting the original intended structure and flow as much as possible while enhancing its quality.
 """

@@ -20,12 +20,10 @@ Focus on tangible objects, specific scenes, actions, or visually distinct featur
 
 For example:
 - If article is about **Guitars** and section_name is "Anatomy of a Stratocaster Neck", good keywords: "Stratocaster guitar neck profile", "close-up Stratocaster headstock". Bad: "Neck Quality".
-- If article is about **Firearms** and section_name is "Understanding Ballistics", good keywords: "ballistic gel test with bullet", "firearm ballistic trajectory diagram", "close-up of bullet impact". Bad: "Ballistic Performance".
 - If article is about **Software Development** and section_name is "Optimizing Database Queries", good keywords: "database query execution plan diagram", "flowchart of SQL optimization", "server room database racks". Bad: "Query Speed".
 - If article is about **Gardening** and section_name is "Choosing the Right Soil for Tomatoes", good keywords: "hands holding rich potting soil", "tomato plants in raised garden bed", "soil pH test kit". Bad: "Soil Importance".
 - If article is about **Travel** and section_name is "Exploring the Amalfi Coast", good keywords: "Positano cliffside village view", "Amalfi Coast lemon groves", "boat tour Capri grotto". Bad: "Coastal Beauty".
 - If section_name is "Build Quality and Playability Insights" (for a physical product like a lap steel guitar), good keywords: "lap steel guitar construction detail", "close-up Rogue RLS-1 lap steel", "hand playing lap steel guitar". Bad: "Playability".
-- If article is about **Cooking** and section_name is "Essential Kitchen Tools", good keywords: "chef's knife on cutting board", "kitchen utensils organized drawer", "mixing bowl set". Bad: "Kitchen Efficiency".
 
 Provide ONLY the keyword phrase, without quotation marks or any other explanatory text.
 """

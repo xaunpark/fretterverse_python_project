@@ -21,8 +21,8 @@ USER_AGENT_FALLBACK = "GenericPythonBot/1.0"
 # --- Cấu hình cho OpenAI & LLMs ---
 DEFAULT_OPENAI_CHAT_MODEL = "openai/gpt-4o-mini" # Model mặc định cho OpenRouter
 DEFAULT_OPENAI_CHAT_MODEL_FOR_OUTLINE = "openai/gpt-4.1" # Model cho outline qua OpenRouter
-DEFAULT_OPENAI_CHAT_MODEL_FOR_CONTENT = "openai/gpt-4o-mini" # Model cho viết content qua OpenRouter
-DEFAULT_OPENAI_CHAT_MODEL_FOR_FINALIZING = "openai/gpt-4.1" # Model cho hoàn thiện nội dung
+DEFAULT_OPENAI_CHAT_MODEL_FOR_CONTENT = "openai/gpt-4.1" # Model cho viết content qua OpenRouter
+DEFAULT_OPENAI_CHAT_MODEL_FOR_FINALIZING = "openai/gpt-4o-mini" # Model cho hoàn thiện nội dung
 DEFAULT_OPENAI_EMBEDDINGS_MODEL = "text-embedding-3-small"
 DEFAULT_GEMINI_MODEL = "gemini-pro" # Nếu bạn vẫn dùng Gemini cho một số tác vụ
 OPENROUTER_API_KEY = None # Sẽ được override bởi .env
@@ -34,14 +34,14 @@ GOOGLE_SEARCH_NUM_RESULTS = 10 # Số kết quả lấy từ Google Search cho p
 SERPER_API_KEY = None # Sẽ được override bởi .env
 SERPER_BASE_URL = "https://google.serper.dev"
 SEARCH_PROVIDER = "serper" # Giá trị có thể là "google" hoặc "serper"
-IMAGE_SEARCH_MIN_WIDTH = 400 # Kích thước chiều rộng tối thiểu cho ảnh từ Serper
-IMAGE_SEARCH_MIN_HEIGHT = 100 # Kích thước chiều cao tối thiểu cho ảnh từ Serper
+IMAGE_SEARCH_MIN_WIDTH = 800 # Kích thước chiều rộng tối thiểu cho ảnh từ Serper
+IMAGE_SEARCH_MIN_HEIGHT = 600 # Kích thước chiều cao tối thiểu cho ảnh từ Serper
 YOUTUBE_SEARCH_NUM_RESULTS = 5
 
 # --- Cấu hình logic nghiệp vụ ---
 VIDEO_INSERTION_PROBABILITY = 0.3 # Xác suất chèn video (0.0 đến 1.0)
-EXTERNAL_LINKS_PER_SECTION_MIN = 1
-EXTERNAL_LINKS_PER_SECTION_MAX = 4
+EXTERNAL_LINKS_PER_SECTION_MIN = 0
+EXTERNAL_LINKS_PER_SECTION_MAX = 3
 PINECONE_SIMILARITY_THRESHOLD = 0.8 # Ngưỡng để coi keyword là không unique
 
 # --- Cấu hình Google Sheets ---
