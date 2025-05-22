@@ -70,7 +70,7 @@ ENV_CONFIG_MAPPING = [
     {'env_var': 'LOG_FILE_PATH'},
     {'env_var': 'LOG_TO_CONSOLE', 'type': bool},
     {'env_var': 'LOG_TO_FILE', 'type': bool},
-    {'env_var': 'ORCHESTRATOR_LOG_FILE_PATH'},
+    {'env_var': 'ORCHESTRATOR_LOG_FILE_PATH'}, # Thêm dòng này
     {'env_var': 'ENABLE_FEATURED_IMAGE_GENERATION', 'type': bool},
     {'env_var': 'FEATURED_IMAGE_MODEL'},
     {'env_var': 'DEFAULT_POST_STATUS'},
