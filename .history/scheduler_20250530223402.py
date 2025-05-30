@@ -7,17 +7,6 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 import signal
 
-# Add psutil import for robust PID checking
-try:
-    import psutil
-except ImportError:
-    # This is a critical dependency for the robust PID check.
-    # A print statement is used here as logger might not be set up yet if this fails early.
-    print("CRITICAL ERROR: The 'psutil' library is required by the scheduler for robust process management "
-          "but is not installed. Please install it (e.g., 'pip install psutil') and try again.", file=sys.stderr)
-    sys.exit(1) # Exit if psutil is not available.
-
-
 # Assuming utils.config_loader is in the "utils" directory at the project root
 # and scheduler.py is also at the project root.
 try:
@@ -285,50 +274,27 @@ def main_scheduler_loop():
     finally:
         logger.info("Scheduler shutting down gracefully or due to an error.")
         remove_pid_file() # Ensure PID file is removed on exit
-    
+
 if __name__ == "__main__":
-    # Robustly check if another instance is already running using the PID file
+    # Check if another instance is already running using the PID file
     if os.path.exists(SCHEDULER_PID_FILE):
-        pid_from_file = None
         try:
             with open(SCHEDULER_PID_FILE, "r") as f:
-                pid_from_file = int(f.read().strip())
-            
-            if psutil.pid_exists(pid_from_file):
-                # Process with that PID exists. Check if it's likely this scheduler.
-                # This is a basic check; a more sophisticated one might inspect process command line.
-                logger.warning(
-                    f"Scheduler PID file '{SCHEDULER_PID_FILE}' exists and process (PID: {pid_from_file}) is running. "
-                    "Another instance appears to be active. Exiting."
-                )
-                sys.exit(1)
-            else:
-                # PID from file does not correspond to a running process (stale PID file)
-                logger.info(f"Process with PID {pid_from_file} from '{SCHEDULER_PID_FILE}' not found. Stale PID file.")
-                try:
-                    os.remove(SCHEDULER_PID_FILE)
-                    logger.info(f"Removed stale PID file: {SCHEDULER_PID_FILE}")
-                except OSError as e:
-                    # Use print as logger might not be fully configured if this happens very early
-                    print(f"ERROR: Could not remove stale PID file '{SCHEDULER_PID_FILE}': {e}. Please remove it manually. Exiting.", file=sys.stderr)
-                    sys.exit(1)
-        
-        except (IOError, ValueError) as e:
-            # Error reading PID from file, assume it's corrupt/stale
-            # Use print as logger might not be fully configured if this happens very early
-            print(f"WARNING: Error reading PID from existing file '{SCHEDULER_PID_FILE}': {e}. Assuming stale/corrupt.", file=sys.stderr)
-            try:
-                os.remove(SCHEDULER_PID_FILE)
-                print(f"INFO: Removed potentially corrupt PID file: {SCHEDULER_PID_FILE}", file=sys.stderr)
-            except OSError as rm_e:
-                print(f"ERROR: Could not remove corrupt PID file '{SCHEDULER_PID_FILE}': {rm_e}. Please remove it manually. Exiting.", file=sys.stderr)
-                sys.exit(1)
-        except psutil.Error as e_psutil:
-            # Handle potential psutil errors during the check
-            print(f"ERROR: psutil error while checking existing process for PID {pid_from_file}: {e_psutil}. Exiting to be safe.", file=sys.stderr)
+                pid = int(f.read().strip())
+            # Check if the process with that PID is actually running
+            # (This requires a library like psutil, or OS-specific commands)
+            # For simplicity, we'll just assume if PID file exists, another instance might be running.
+            # A more robust check would use psutil.pid_exists(pid)
+            logger.warning(f"Scheduler PID file '{SCHEDULER_PID_FILE}' already exists (PID: {pid}). "
+                           "Another instance might be running. If not, delete the PID file and retry. Exiting.")
             sys.exit(1)
-        # If we've reached here, either the PID file didn't exist, 
-        # or it was stale and has been removed, or we've exited.
+        except (IOError, ValueError) as e:
+            logger.warning(f"Error reading PID file '{SCHEDULER_PID_FILE}': {e}. "
+                           "If another instance is not running, delete the file and retry. Exiting.")
+            sys.exit(1)
+        except Exception as e_psutil_check: # Placeholder if psutil was used
+            logger.warning(f"Error checking existing process with psutil: {e_psutil_check}. Exiting.")
+            sys.exit(1)
 
-    # Proceed to run the main scheduler logic
+
     main_scheduler_loop()

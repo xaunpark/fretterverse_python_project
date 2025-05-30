@@ -1,0 +1,103 @@
+{
+    "SCHEDULE_ENABLED": true,
+    "SCHEDULE_INTERVAL_HOURS": 0,
+    "SCHEDULE_INTERVAL_MINUTES": 30,
+
+    "SITE_NAME": "Fretterverse",
+    "WP_BASE_URL": "https://fretterverse.com",
+    "DEFAULT_POST_STATUS": "publish",
+    "DEFAULT_AUTHOR_ID": 9,
+    "DEFAULT_CATEGORY_ID": 86,
+    "IMAGE_RESIZE_WIDTH": 700,
+    "IMAGE_RESIZE_HEIGHT": 700,
+    "FEATURED_IMAGE_RESIZE_WIDTH": 800,
+    "USER_AGENT": "FretterVersePythonBot/1.0 (+http://fretterverse.com/bot-info)",
+    "MYSQL_DATABASE": "wordpress",
+    "WP_TABLE_PREFIX": "wp_",
+
+    "PAST_DATE_PUBLISHING_ENABLED": true,
+    "PAST_DATE_PUBLISHING_START_DATE": "2024-07-01",
+    "PAST_DATE_PUBLISHING_END_DATE": "2025-04-30",
+
+    "GSHEET_KEYWORD_SHEET_NAME": "Keyword",
+    "GSHEET_KEYWORD_SHEET_NAME_USED_0": "Keyword Used = 0",
+    "GSHEET_KEYWORD_COLUMN": "Keyword",
+    "GSHEET_USED_COLUMN": "Used",
+    "GSHEET_UNIQUE_COLUMN": "Uniqe",
+    "GSHEET_SUITABLE_COLUMN": "Suitable",
+    "GSHEET_POST_TITLE_COLUMN": "Post Title",
+    "GSHEET_POST_ID_COLUMN": "Post ID",
+    "GSHEET_POST_URL_COLUMN": "Post URL",
+    "GSHEET_STATUS_COLUMN": "Status",
+  
+    "PINECONE_INDEX_NAME": "fretterverse",
+    "PINECONE_EMBEDDING_DIMENSION": 256,
+    "PINECONE_SIMILARITY_THRESHOLD": 0.8,
+    "PINECONE_AUTOCREATE_INDEX": false,
+    "PINECONE_METRIC": "cosine",
+    "PINECONE_CLOUD_PROVIDER": "aws",
+    "PINECONE_REGION": "us-west-2",
+    "SITE_SPECIFIC_PROMPT_VALUES": {
+      "CHECK_KEYWORD_SUITABILITY_PROMPT_CONTENT": "Given that I have a website about music and musical instruments and need to write blog posts, evaluate whether the keyword '{keyword}' is suitable for the blog post.\nA keyword is suitable ('yes') if it meets the following criteria:\n\nRelates to general music knowledge, technical guidance, or musical instruments.\nExcludes overly specific keywords about tabs, chords, charts, or individual song titles.\nAvoids biographical trivia, personal gossip, or pop culture unless directly tied to music, instruments, or their impact.\nAvoids keywords about artist deaths, health, or unrelated locations unless relevant to their musical legacy.\nRespond in JSON format with 'yes' or 'no'. \n \nFor example, 'Guitar Tabs' is not suitable, while 'Guitar Techniques' is suitable.\n Example of response: {{\"suitable\": \"yes\"}}"
+    },
+    "AUTHOR_PERSONAS": [
+      {
+        "name": "Charles Davis",
+        "info": "Guitar education expert, renowned for making guitar learning accessible, engaging, and effective for all levels. Focuses on simplifying complex techniques and music theory into understandable lessons, covering topics from fundamentals, fretboard techniques, styles (blues, rock) to modern harmony.",
+        "ID": "13"
+      },
+      {
+        "name": "David Garcia",
+        "info": "Leading expert in the science and technology of stringed instruments. Focuses on acoustics, materials science, and engineering principles to optimize instrument sound, function, and durability. Provides knowledge for luthiers, manufacturers, and musicians on instrument design, restoration, and scientific analysis.",
+        "ID": "11"
+      },
+      {
+        "name": "Michael Brown",
+        "info": "Respected authority on guitar gear and technology. Deep knowledge of amplifiers (tube, digital modelers), effects pedals, and their application in achieving desired sounds. Offers reviews, analysis, and practical advice on selecting and optimizing guitar equipment.",
+        "ID": "10"
+      },
+      {
+        "name": "Richard Miller",
+        "info": "Acoustic guitar master, particularly renowned for his fingerstyle playing and profound expressive capabilities. Specializes in fingerstyle techniques, alternate tunings, and the art of acoustic arrangement. Provides tutorials, lessons, and reviews of acoustic instruments.",
+        "ID": "12"
+      },
+      {
+        "name": "Robert Williams",
+        "info": "Expert in guitar harmony, known as the 'Architect of Auditory Art'. Focuses on analyzing and teaching complex harmonic structures (chords, voicings, chord melody, counterpoint) across jazz, classical, and contemporary styles, enabling players to express music more profoundly.",
+        "ID": "9"
+      }
+    ],
+  
+    "IMAGE_PROCESSOR_CONFIG": {
+      "MAX_SELECTION_ATTEMPTS": 3,
+      "DOWNLOAD_TIMEOUT": 10,
+      "RETRY_DELAY": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "GOOGLE_IMAGE_SIZE_FILTER": "large",
+      "GOOGLE_SEARCH_NUM_RESULTS_IMAGES": 10,
+      "RESIZE_QUALITY": 85
+    },
+    "VIDEO_PROCESSOR_CONFIG": {
+      "INSERTION_PROBABILITY": 0.3,
+      "SEARCH_COUNT": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "SKIP_SECTION_NAMES_CONTAINING": ["top rated"],
+      "SKIP_SECTION_INDEXES": [2]
+    },
+    "EXTERNAL_LINKS_PROCESSOR_CONFIG": {
+      "MIN_LINKS_PER_SECTION": 1,
+      "MAX_LINKS_PER_SECTION": 2,
+      "NUM_SEARCH_RESULTS": 5,
+      "SKIP_TAGS": ["introduction", "conclusion", "faqs"],
+      "SKIP_MOTHER_CHAPTER": true,
+      "SKIP_SECTION_NAMES_CONTAINING": ["top rated"],
+      "SKIP_SECTION_INDEXES": [2]
+    },
+    "FEATURED_IMAGE_CONFIG": {
+      "ENABLED": false,
+      "MODEL": "dall-e-3",
+      "SIZE": "1792x1024"
+    }
+  }  
